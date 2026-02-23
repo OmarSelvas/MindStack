@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.views.LoginView
 import com.example.mindstack.views.WelcomeView
+import com.example.mindstack.views.MoodView
 
 @Composable
 fun NavManager() {
@@ -15,7 +16,10 @@ fun NavManager() {
             LoginView(navController)
         }
         composable("welcome") { 
-            WelcomeView()
+            WelcomeView(navController)
+        }
+        composable("mood") {
+            MoodView(navController)
         }
     }
 }

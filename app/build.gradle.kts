@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.ui)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     // ✅ BOM único — gestiona versiones de Compose automáticamente
