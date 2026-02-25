@@ -142,11 +142,7 @@ fun RegisterView(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(32.dp))
             Button(
-                onClick = {
-                    dateOfBirth?.let { dob ->
-                        val age = Period.between(dob, LocalDate.now()).years
-                    }
-                },
+                onClick = { navController.navigate("main_view") },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Registrarse")

@@ -66,7 +66,7 @@ fun LoginView(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = { navController.navigate("welcome") }) {
+        Button(onClick = { navController.navigate("main_view") }) {
             Text("Iniciar sesión")
         }
 
