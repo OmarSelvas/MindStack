@@ -2,10 +2,13 @@ package com.example.mindstack.views
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,23 +19,30 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.R
-import com.example.mindstack.ui.theme.MindStackTheme
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterView(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var surnames by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // Estado para el Calendario
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+
+    // Formatear la fecha seleccionada
+    val selectedDate = datePickerState.selectedDateMillis?.let {
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it))
+    } ?: ""
 
     val textFieldColors = TextFieldDefaults.colors(
         focusedContainerColor = Color.White,
@@ -44,20 +54,38 @@ fun RegisterView(navController: NavController) {
         cursorColor = Color.Black
     )
 
+    // Lógica del Diálogo del Calendario
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("OK", color = Color(0xFF4A80B4))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFD6D6D6)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(60.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
+        Spacer(modifier = Modifier.height(50.dp))
+
+        // --- CABECERA ---
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(id = R.drawable.pinky_happy),
-                contentDescription = "Mindstack Logo",
+                contentDescription = null,
                 modifier = Modifier.size(70.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -71,6 +99,7 @@ fun RegisterView(navController: NavController) {
 
         Spacer(modifier = Modifier.height(40.dp))
 
+        // --- CUERPO AZUL ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,81 +109,131 @@ fun RegisterView(navController: NavController) {
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(35.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
-            // Lista corregida: cada elemento usa 'to' para crear el Pair
-            val fields = listOf(
-                "Nombre(s):" to name,
-                "Apellidos:" to surnames,
-                "Edad:" to age,
-                "Usuario:" to username,
-                "Correo:" to email,
-                "Contraseña:" to password
+            // Nombre
+            CustomLabel("Nombre(s):")
+            TextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = textFieldColors,
+                singleLine = true
             )
 
-            fields.forEach { (label, value) ->
-                Text(
-                    text = label,
+            Spacer(modifier = Modifier.height(15.dp))
+
+            // Apellidos
+            CustomLabel("Apellidos:")
+            TextField(
+                value = surnames,
+                onValueChange = { surnames = it },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = textFieldColors,
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            // Fecha de Nacimiento (Calendario) - CORREGIDO
+            CustomLabel("Fecha de nacimiento:")
+            Card(
+                onClick = { showDatePicker = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp, bottom = 4.dp),
-                    fontSize = 16.sp,
-                    color = Color.Black
-                )
-                TextField(
-                    value = value,
-                    onValueChange = { newValue ->
-                        when (label) {
-                            "Nombre(s):" -> name = newValue
-                            "Apellidos:" -> surnames = newValue
-                            "Edad:" -> age = newValue
-                            "Usuario:" -> username = newValue
-                            "Correo:" -> email = newValue
-                            "Contraseña:" -> password = newValue
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(25.dp),
-                    colors = textFieldColors,
-                    singleLine = true,
-                    visualTransformation = if (label == "Contraseña:") {
-                        PasswordVisualTransformation()
-                    } else {
-                        VisualTransformation.None
-                    }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (selectedDate.isEmpty()) "Seleccionar fecha" else selectedDate,
+                        color = if (selectedDate.isEmpty()) Color.Gray else Color.Black,
+                        fontSize = 16.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = null,
+                        tint = Color.Gray
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(15.dp))
 
+            // Usuario
+            CustomLabel("Usuario:")
+            TextField(
+                value = username,
+                onValueChange = { username = it },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = textFieldColors,
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            // Correo
+            CustomLabel("Correo:")
+            TextField(
+                value = email,
+                onValueChange = { email = it },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = textFieldColors,
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            // Contraseña
+            CustomLabel("Contraseña:")
+            TextField(
+                value = password,
+                onValueChange = { password = it },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = textFieldColors,
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Botón Registrarse - NAVEGACIÓN FUNCIONAL
             Button(
-                onClick = { /* Lógica de registro */ },
+                onClick = { navController.navigate("main_view") },
                 modifier = Modifier
                     .width(220.dp)
                     .height(55.dp),
                 shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4A80B4)
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A80B4))
             ) {
-                Text(
-                    text = "Registrarse",
-                    color = Color.White,
-                    fontSize = 18.sp
-                )
+                Text("Registrarse", color = Color.White, fontSize = 18.sp)
             }
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun RegisterViewPreview() {
-    MindStackTheme {
-        RegisterView(navController = rememberNavController())
-    }
+fun CustomLabel(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, bottom = 4.dp),
+        fontSize = 16.sp,
+        color = Color.Black
+    )
 }

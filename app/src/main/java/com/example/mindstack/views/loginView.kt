@@ -24,7 +24,7 @@ fun LoginView(navController: NavController) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // Configuración de colores para limpiar los bordes del TextField
+    // Configuración visual de los campos
     val textFieldColors = TextFieldDefaults.colors(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
@@ -38,10 +38,9 @@ fun LoginView(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFD6D6D6)), // Gris de la parte superior
+            .background(Color(0xFFD6D6D6)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // --- SECCIÓN LOGO ---
         Spacer(modifier = Modifier.height(80.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -63,12 +62,11 @@ fun LoginView(navController: NavController) {
 
         Spacer(modifier = Modifier.height(60.dp))
 
-        // --- TARJETA AZUL (CUERPO) ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
-                .background(Color(0xFFCFDEE7)) // Azul pastel de la imagen
+                .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
+                .background(Color(0xFFCFDEE7)) // Azul pastel exacto
                 .padding(horizontal = 40.dp, vertical = 50.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -107,11 +105,12 @@ fun LoginView(navController: NavController) {
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(50.dp))
 
-            // Botón Iniciar Sesión
             Button(
-                onClick = { /* Acción de login */ },
+                onClick = {
+                    navController.navigate("main_view")
+                },
                 modifier = Modifier
                     .width(220.dp)
                     .height(55.dp),
@@ -123,18 +122,6 @@ fun LoginView(navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-
-            // Botón Registrarse
-            Button(
-                onClick = { navController.navigate("register_view") },
-                modifier = Modifier
-                    .width(220.dp)
-                    .height(55.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A80B4))
-            ) {
-                Text(text = "Registrarse", color = Color.White, fontSize = 18.sp)
-            }
         }
     }
 }
