@@ -6,16 +6,28 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.views.LoginView
 import com.example.mindstack.views.WelcomeView
+import com.example.mindstack.views.MoodView
+import com.example.mindstack.views.RegisterView
+import com.example.mindstack.views.MainView
 
 @Composable
 fun NavManager() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "login") {
-        composable("login") { 
+    NavHost(navController = navController, startDestination = "welcome") {
+        composable("welcome") { 
+            WelcomeView(navController)
+        }
+        composable("login_view") { 
             LoginView(navController)
         }
-        composable("welcome") { 
-            WelcomeView()
+        composable("register_view") { 
+            RegisterView(navController)
+        }
+        composable("main_view") { 
+            MainView(navController)
+        }
+        composable("mood") {
+            MoodView(navController)
         }
     }
 }
