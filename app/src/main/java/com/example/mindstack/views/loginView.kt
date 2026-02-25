@@ -34,7 +34,7 @@ fun LoginView(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFE6AC))
+            .background(Color(0xFFC7D9E5))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
@@ -67,8 +67,9 @@ fun LoginView(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = { navController.navigate("welcome") }) {
-            Text("Login")
+            Text("Iniciar sesión")
         }
+
     }
 }
 

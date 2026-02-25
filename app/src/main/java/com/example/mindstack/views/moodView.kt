@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,30 +31,26 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.mindstack.R
 import com.example.mindstack.ui.theme.MindStackTheme
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
-import com.example.mindstack.R
 
-
-data class Mood(
-    val name: String,
-    val color: Color,
-    val emoji: String,
-    val imageRes: Int )
+data class Mood(val name: String, val color: Color, val emoji: String)
 
 val moods = listOf(
-    Mood("Exhausto", Color(0xFFBDB2FF), "x_x", R.drawable.pinky_exhausted),
-    Mood("Triste", Color(0xFFFFD6A5), ":(", R.drawable.pinky_sad),
-    Mood("Neutral", Color(0xFFFDFFB6), ":|", R.drawable.pinky_neutral),
-    Mood("Feliz", Color(0xFFCAFFBF), ":)", R.drawable.pinky_happy),
-    Mood("Excelente", Color(0xFF9BF6FF), ":D", R.drawable.pinky_excellent)
+    Mood("Exhausto", Color(0xFFBDB2FF), "x_x"),
+    Mood("Triste", Color(0xFFFFD6A5), ":("),
+    Mood("Neutral", Color(0xFFFDFFB6), ":|"),
+    Mood("Feliz", Color(0xFFCAFFBF), ":)"),
+    Mood("Excelente", Color(0xFF9BF6FF), ":D")
 )
 
 @Composable
@@ -87,7 +84,7 @@ fun MoodView(navController: NavController) {
         }
 
         Image(
-            painter = painterResource(id = R.drawable.pinky_excellent),
+            painter = painterResource(id = R.drawable.pinky_happy),
             contentDescription = currentMood.name,
             modifier = Modifier
                 .height(200.dp)
