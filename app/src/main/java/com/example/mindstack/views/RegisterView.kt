@@ -2,151 +2,151 @@ package com.example.mindstack.views
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.R
 import com.example.mindstack.ui.theme.MindStackTheme
-import java.time.Instant
-import java.time.LocalDate
-import java.time.Period
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterView(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var surnames by remember { mutableStateOf("") }
+    var age by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var dateOfBirth by remember { mutableStateOf<LocalDate?>(null) }
-    var showDatePicker by remember { mutableStateOf(false) }
+
+    val textFieldColors = TextFieldDefaults.colors(
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        disabledContainerColor = Color.White,
+        focusedIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent,
+        disabledIndicatorColor = Color.Transparent,
+        cursorColor = Color.Black
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE0E0E0)),
+            .background(Color(0xFFD6D6D6)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(60.dp))
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
             Image(
                 painter = painterResource(id = R.drawable.pinky_happy),
-                contentDescription = "Mindstack Logo"
+                contentDescription = "Mindstack Logo",
+                modifier = Modifier.size(70.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = "Mindstack",
-                style = MaterialTheme.typography.headlineLarge
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.Black
             )
         }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                .background(Color(0xFFD0E0F0))
-                .padding(32.dp)
+                .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
+                .background(Color(0xFFCFDEE7))
+                .padding(horizontal = 40.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Nombre(s):")
-            OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Apellidos:")
-            OutlinedTextField(value = surnames, onValueChange = { surnames = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(35.dp))
 
-            Text(text = "Fecha de nacimiento:")
-            Button(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(text = dateOfBirth?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: "Seleccionar fecha")
-            }
+            // Lista corregida: cada elemento usa 'to' para crear el Pair
+            val fields = listOf(
+                "Nombre(s):" to name,
+                "Apellidos:" to surnames,
+                "Edad:" to age,
+                "Usuario:" to username,
+                "Correo:" to email,
+                "Contraseña:" to password
+            )
 
-            if (showDatePicker) {
-                val datePickerState = rememberDatePickerState()
-                val confirmEnabled = remember { derivedStateOf { datePickerState.selectedDateMillis != null } }
-
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                datePickerState.selectedDateMillis?.let {
-                                    dateOfBirth = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
-                                }
-                                showDatePicker = false
-                            },
-                            enabled = confirmEnabled.value
-                        ) {
-                            Text("OK")
+            fields.forEach { (label, value) ->
+                Text(
+                    text = label,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, bottom = 4.dp),
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+                TextField(
+                    value = value,
+                    onValueChange = { newValue ->
+                        when (label) {
+                            "Nombre(s):" -> name = newValue
+                            "Apellidos:" -> surnames = newValue
+                            "Edad:" -> age = newValue
+                            "Usuario:" -> username = newValue
+                            "Correo:" -> email = newValue
+                            "Contraseña:" -> password = newValue
                         }
                     },
-                    dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancelar")
-                        }
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = textFieldColors,
+                    singleLine = true,
+                    visualTransformation = if (label == "Contraseña:") {
+                        PasswordVisualTransformation()
+                    } else {
+                        VisualTransformation.None
                     }
-                ) {
-                    DatePicker(state = datePickerState)
-                }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Usuario:")
-            OutlinedTextField(value = username, onValueChange = { username = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Correo:")
-            OutlinedTextField(value = email, onValueChange = { email = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Contraseña:")
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation()
-            )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
             Button(
-                onClick = { navController.navigate("main_view") },
-                modifier = Modifier.fillMaxWidth()
+                onClick = { /* Lógica de registro */ },
+                modifier = Modifier
+                    .width(220.dp)
+                    .height(55.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4A80B4)
+                )
             ) {
-                Text("Registrarse")
+                Text(
+                    text = "Registrarse",
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
             }
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
