@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,34 +18,60 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.R
-import com.example.mindstack.ui.theme.MindStackTheme
+import com.example.mindstack.ui.AuthViewModel
 
 @Composable
-fun SettingView(navController: NavController) {
+fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
+    val user = authViewModel.currentUser
     var isEditing by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("Ian Mauricio Morales Montejo") }
-    var email by remember { mutableStateOf("correodeejemplo@gmail.com") }
-    var username by remember { mutableStateOf("__Torao__") }
+    
+    if (user == null) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("No se ha iniciado sesión")
+            Button(onClick = { navController.navigate("login_view") }) {
+                Text("Ir al Login")
+            }
+        }
+        return
+    }
+
+    var name by remember { mutableStateOf("${user.name} ${user.lastName}") }
+    var email by remember { mutableStateOf(user.email) }
+    var dob by remember { mutableStateOf(user.dateOfBirth) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFA294E3))
     ) {
-        Text(
-            text = "Perfil",
-            fontSize = 32.sp,
-            color = Color.Black,
-            modifier = Modifier.padding(start = 24.dp, top = 48.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 48.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Perfil",
+                fontSize = 32.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(onClick = { 
+                authViewModel.logout()
+                navController.navigate("welcome") {
+                    popUpTo(0)
+                }
+            }) {
+                Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = Color.Black)
+            }
+        }
 
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -53,55 +80,36 @@ fun SettingView(navController: NavController) {
             Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
                     modifier = Modifier
-                        .size(180.dp)
+                        .size(150.dp)
                         .clip(CircleShape)
-                        .background(Color.White)
-                        .clickable(enabled = isEditing) {},
+                        .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.pinky_happy),
                         contentDescription = "Profile Picture",
-                        modifier = Modifier.size(120.dp)
+                        modifier = Modifier.size(100.dp)
                     )
-                    if (isEditing) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Cambiar foto", color = Color.White, fontSize = 12.sp)
-                        }
-                    }
                 }
                 Box(
                     modifier = Modifier
-                        .size(45.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFE2D7F7))
+                        .background(Color.White)
                         .clickable { isEditing = !isEditing }
                         .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (isEditing) Icons.Default.Check else Icons.Default.Edit,
-                        contentDescription = if (isEditing) "Save" else "Edit",
+                        contentDescription = null,
                         tint = Color.Gray
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            if (isEditing) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
-            } else {
-                Text(text = name, color = Color.Black, fontSize = 16.sp)
-            }
+            Text(text = name, color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.Medium)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -115,62 +123,28 @@ fun SettingView(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            EditableProfileField(label = "Correo:", value = email, isEditing = isEditing, onValueChange = { email = it })
-            EditableProfileField(label = "Username", value = username, isEditing = isEditing, onValueChange = { username = it })
-            ProfileField(label = "Cuenta creada:", value = "01/01/2024")
+            ProfileDataField(label = "Nombre completo:", value = name)
+            ProfileDataField(label = "Correo electrónico:", value = email)
+            ProfileDataField(label = "Fecha de nacimiento:", value = dob)
+            ProfileDataField(label = "Horas de sueño ideales:", value = "${user.idealSleepHours} hrs")
         }
     }
 }
 
 @Composable
-fun EditableProfileField(label: String, value: String, isEditing: Boolean, onValueChange: (String) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth(0.9f)) {
-        Text(text = label, fontSize = 14.sp, color = Color.Black)
-        if (isEditing) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFE5E4DE))
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text(text = value, fontSize = 14.sp, color = Color.Black)
-            }
-        }
-    }
-}
-
-@Composable
-fun ProfileField(label: String, value: String) {
-    Column(modifier = Modifier.fillMaxWidth(0.9f)) {
-        Text(text = label, fontSize = 14.sp, color = Color.Black)
+fun ProfileDataField(label: String, value: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = label, fontSize = 14.sp, color = Color.Gray, modifier = Modifier.padding(start = 8.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFFE5E4DE))
+                .height(50.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(Color.White)
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(text = value, fontSize = 14.sp, color = Color.Black)
+            Text(text = value, fontSize = 16.sp, color = Color.Black)
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SettingViewPreview() {
-    MindStackTheme {
-        SettingView(navController = rememberNavController())
     }
 }

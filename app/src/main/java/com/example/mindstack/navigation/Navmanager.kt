@@ -24,11 +24,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.mindstack.ui.AuthViewModel
 import com.example.mindstack.views.LoginView
 import com.example.mindstack.views.WelcomeView
 import com.example.mindstack.views.MoodView
@@ -41,10 +43,12 @@ fun NavManager() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val authViewModel: AuthViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
-            if (currentRoute != "welcome") {
+            val hideBar = listOf("welcome", "login_view", "register_view")
+            if (currentRoute !in hideBar) {
                 CustomBottomBar(navController, currentRoute)
             }
         }
@@ -52,11 +56,11 @@ fun NavManager() {
         Box(modifier = Modifier.padding(innerPadding)) {
             NavHost(navController = navController, startDestination = "welcome") {
                 composable("welcome") { WelcomeView(navController) }
-                composable("login_view") { LoginView(navController) }
-                composable("register_view") { RegisterView(navController) }
+                composable("login_view") { LoginView(navController, authViewModel) }
+                composable("register_view") { RegisterView(navController, authViewModel) }
                 composable("main_view") { MainView(navController) }
                 composable("mood") { MoodView(navController) }
-                composable("profile") { SettingView(navController) }
+                composable("profile") { SettingView(navController, authViewModel) }
             }
         }
     }

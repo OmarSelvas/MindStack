@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface MindStackDao {
     // USUARIOS
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: User)
+    suspend fun insertUser(user: User): Long // <-- Added : Long
 
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun getUserByEmail(email: String): User?
@@ -18,34 +18,34 @@ interface MindStackDao {
 
     // CHECK-INS DIARIOS
     @Insert
-    suspend fun insertDailyCheckin(checkin: DailyCheckin)
+    suspend fun insertDailyCheckin(checkin: DailyCheckin): Long // <-- Added : Long
 
     @Query("SELECT * FROM daily_checkin WHERE id_user = :userId ORDER BY date_time DESC")
     fun getCheckinsByUser(userId: Int): Flow<List<DailyCheckin>>
 
     // ROLES, MOODS Y STATUS
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertRol(rol: Rol)
+    suspend fun insertRol(rol: Rol): Long // <-- Added : Long
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertMood(mood: MoodEntity)
+    suspend fun insertMood(mood: MoodEntity): Long // <-- Added : Long
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertStatus(status: Status)
+    suspend fun insertStatus(status: Status): Long // <-- Added : Long
 
     // JUEGOS Y SESIONES
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertJuego(juego: Juego)
+    suspend fun insertJuego(juego: Juego): Long // <-- Added : Long
 
     @Insert
-    suspend fun insertGameSession(session: GameSession)
+    suspend fun insertGameSession(session: GameSession): Long // <-- Added : Long
 
     @Query("SELECT * FROM game_session WHERE id_user = :userId ORDER BY date_time DESC")
     fun getGameSessionsByUser(userId: Int): Flow<List<GameSession>>
 
     // MENSAJES
     @Insert
-    suspend fun insertMessage(message: Message)
+    suspend fun insertMessage(message: Message): Long // <-- Added : Long
 
     @Query("SELECT * FROM messages WHERE id_user = :userId ORDER BY date_time ASC")
     fun getMessagesByUser(userId: Int): Flow<List<Message>>
