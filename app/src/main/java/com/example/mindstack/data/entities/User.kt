@@ -26,7 +26,7 @@ data class User(
     val email: String,
     val password: String,
     @ColumnInfo(name = "date_of_birth")
-    val dateOfBirth: Date,
+    val dateOfBirth: String,
     val gender: String,
     @ColumnInfo(name = "id_rol")
     val idRol: Int,
