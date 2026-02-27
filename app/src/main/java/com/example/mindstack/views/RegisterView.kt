@@ -52,7 +52,10 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         }
     }
 
+    // ACTUALIZACIÓN: Colores configurados para que el texto sea negro y visible
     val textFieldColors = TextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         disabledContainerColor = Color.White,
@@ -124,7 +127,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             TextField(
                 value = name,
                 onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25.dp),
                 colors = textFieldColors,
                 singleLine = true
@@ -136,7 +139,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             TextField(
                 value = surnames,
                 onValueChange = { surnames = it },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25.dp),
                 colors = textFieldColors,
                 singleLine = true
@@ -147,7 +150,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             CustomLabel("Fecha de nacimiento:")
             Card(
                 onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(55.dp),
                 shape = RoundedCornerShape(25.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
@@ -171,7 +174,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             TextField(
                 value = email,
                 onValueChange = { email = it },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25.dp),
                 colors = textFieldColors,
                 singleLine = true
@@ -183,7 +186,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             TextField(
                 value = password,
                 onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(25.dp),
                 colors = textFieldColors,
                 visualTransformation = PasswordVisualTransformation(),
