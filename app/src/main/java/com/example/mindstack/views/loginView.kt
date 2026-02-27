@@ -33,7 +33,10 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
         }
     }
 
+    // ACTUALIZACIÓN: Se agregaron focusedTextColor y unfocusedTextColor
     val textFieldColors = TextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         disabledContainerColor = Color.White,
@@ -74,7 +77,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
-                .background(Color(0xFFCFDEE7)) 
+                .background(Color(0xFFCFDEE7))
                 .padding(horizontal = 40.dp, vertical = 50.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -91,7 +94,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
             TextField(
                 value = email,
                 onValueChange = { email = it },
-                modifier = Modifier.fillMaxWidth().height(55.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = textFieldColors,
                 singleLine = true
@@ -108,7 +111,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
             TextField(
                 value = password,
                 onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth().height(55.dp),
+                modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
                 shape = RoundedCornerShape(28.dp),
                 colors = textFieldColors,
@@ -118,7 +121,8 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
             Spacer(modifier = Modifier.height(50.dp))
 
             if (authViewModel.isLoading) {
-                CircularProgressIndicator(color = Color.White)
+                // Cambié el indicador a azul para que se vea sobre el fondo azul claro
+                CircularProgressIndicator(color = Color(0xFF4A80B4))
             } else {
                 Button(
                     onClick = {
@@ -136,7 +140,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-            
+
             TextButton(onClick = { navController.navigate("register_view") }) {
                 Text("¿No tienes cuenta? Regístrate", color = Color.Black)
             }
