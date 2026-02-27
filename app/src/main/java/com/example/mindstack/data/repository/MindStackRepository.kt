@@ -11,8 +11,6 @@ class MindStackRepository(private val mindStackDao: MindStackDao) {
         // Insertamos el rol por defecto (id=1) para que el registro no falle
         mindStackDao.insertRol(Rol(id = 1, rol = "Usuario"))
         mindStackDao.insertRol(Rol(id = 2, rol = "Administrador"))
-        
-        // También insertamos algunos estados por defecto
         mindStackDao.insertStatus(Status(id = 1, color = "#4CAF50", description = "Estable"))
         mindStackDao.insertMood(MoodEntity(id = 1, mood = "Neutral"))
     }

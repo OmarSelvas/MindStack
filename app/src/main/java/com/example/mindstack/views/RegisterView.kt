@@ -43,10 +43,10 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it))
     } ?: ""
 
-    LaunchedEffect(authViewModel.registrationSuccess) {
-        if (authViewModel.registrationSuccess) {
+    LaunchedEffect(authViewModel.loginSuccess) {
+        if (authViewModel.loginSuccess) {
             Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
-            navController.navigate("login_view") {
+            navController.navigate("main_view") {
                 popUpTo("register_view") { inclusive = true }
             }
         }

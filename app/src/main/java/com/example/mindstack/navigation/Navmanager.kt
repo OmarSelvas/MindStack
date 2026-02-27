@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import com.example.mindstack.views.MoodView
 import com.example.mindstack.views.RegisterView
 import com.example.mindstack.views.MainView
 import com.example.mindstack.views.SettingView
+import com.example.mindstack.views.GamesView
 
 @Composable
 fun NavManager() {
@@ -44,6 +46,15 @@ fun NavManager() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val authViewModel: AuthViewModel = viewModel()
+
+    // Si ya hay sesión activa, saltar al main directamente
+    LaunchedEffect(authViewModel.loginSuccess) {
+        if (authViewModel.loginSuccess && (currentRoute == "welcome" || currentRoute == "login_view" || currentRoute == "register_view")) {
+            navController.navigate("main_view") {
+                popUpTo("welcome") { inclusive = true }
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -59,8 +70,9 @@ fun NavManager() {
                 composable("login_view") { LoginView(navController, authViewModel) }
                 composable("register_view") { RegisterView(navController, authViewModel) }
                 composable("main_view") { MainView(navController) }
-                composable("mood") { MoodView(navController) }
+                composable("mood") { MoodView(navController, authViewModel) }
                 composable("profile") { SettingView(navController, authViewModel) }
+                composable("list") { GamesView(navController) }
             }
         }
     }
@@ -81,7 +93,7 @@ fun CustomBottomBar(navController: NavController, currentRoute: String?) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list", onClick = {  })
+            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list", onClick = { navController.navigate("list") })
             NavBarItem(Icons.Default.DateRange, currentRoute == "mood", onClick = { navController.navigate("mood") })
             NavBarItem(Icons.Default.Home, currentRoute == "main_view", onClick = { navController.navigate("main_view") })
             NavBarItem(Icons.Default.Refresh, currentRoute == "history", onClick = {  })

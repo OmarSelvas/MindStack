@@ -1,6 +1,7 @@
 package com.example.mindstack.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,10 +14,12 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: MindStackRepository
+    private val sharedPreferences = application.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
 
     init {
         val dao = AppDatabase.getDatabase(application).mindStackDao()
         repository = MindStackRepository(dao)
+        checkSession()
     }
 
     // Usuario actualmente logueado
@@ -27,6 +30,20 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     var isLoading by mutableStateOf(false)
     var registrationSuccess by mutableStateOf(false)
     var loginSuccess by mutableStateOf(false)
+
+    // Verificar si hay una sesión guardada
+    private fun checkSession() {
+        val userEmail = sharedPreferences.getString("user_email", null)
+        if (userEmail != null) {
+            viewModelScope.launch {
+                val user = repository.getUserByEmail(userEmail)
+                if (user != null) {
+                    currentUser = user
+                    loginSuccess = true
+                }
+            }
+        }
+    }
 
     // Función para registrar usuario
     fun registerUser(name: String, lastName: String, email: String, password: String, dob: String) {
@@ -64,7 +81,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         idealSleepHours = 8f
                     )
                     repository.insertUser(newUser)
+                    // Auto-login tras registro exitoso
+                    currentUser = newUser
+                    sharedPreferences.edit().putString("user_email", email).apply()
                     registrationSuccess = true
+                    loginSuccess = true
                 }
             } catch (e: Exception) {
                 errorMessage = "Error al guardar: ${e.message}"
@@ -87,7 +108,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val user = repository.getUserByEmail(email)
                 if (user != null && user.password == pass) {
-                    currentUser = user // Guardamos el usuario aquí
+                    currentUser = user
+                    sharedPreferences.edit().putString("user_email", email).apply()
                     loginSuccess = true
                 } else {
                     errorMessage = "Correo o contraseña incorrectos"
@@ -107,5 +129,6 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     fun logout() {
         currentUser = null
         loginSuccess = false
+        sharedPreferences.edit().remove("user_email").apply()
     }
 }
