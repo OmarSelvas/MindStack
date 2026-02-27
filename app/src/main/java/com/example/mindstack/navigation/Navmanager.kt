@@ -34,6 +34,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.ui.AuthViewModel
 import com.example.mindstack.views.*
 import com.example.mindstack.viewmodels.MemoryViewModel
+import com.example.mindstack.viewmodels.WorkingMemoryViewModel
 
 @Composable
 fun NavManager() {
@@ -42,6 +43,7 @@ fun NavManager() {
     val currentRoute = navBackStackEntry?.destination?.route
     val authViewModel: AuthViewModel = viewModel()
     val memoryViewModel: MemoryViewModel = viewModel()
+    val workingMemoryViewModel: WorkingMemoryViewModel = viewModel()
 
     // Si ya hay sesión activa, saltar al main directamente
     LaunchedEffect(authViewModel.loginSuccess) {
@@ -70,6 +72,7 @@ fun NavManager() {
                 composable("profile") { SettingView(navController, authViewModel) }
                 composable("list") { GamesView(navController) }
                 composable("memory_game") { MemoryGameView(navController, memoryViewModel) }
+                composable("working_memory_game") { WorkingMemoryView(navController, authViewModel, workingMemoryViewModel) }
             }
         }
     }
@@ -90,7 +93,7 @@ fun CustomBottomBar(navController: NavController, currentRoute: String?) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list" || currentRoute == "memory_game", onClick = { navController.navigate("list") })
+            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list" || currentRoute == "memory_game" || currentRoute == "working_memory_game", onClick = { navController.navigate("list") })
             NavBarItem(Icons.Default.DateRange, currentRoute == "mood", onClick = { navController.navigate("mood") })
             NavBarItem(Icons.Default.Home, currentRoute == "main_view", onClick = { navController.navigate("main_view") })
             NavBarItem(Icons.Default.Refresh, currentRoute == "history", onClick = {  })

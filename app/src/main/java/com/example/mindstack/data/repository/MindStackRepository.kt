@@ -11,8 +11,22 @@ class MindStackRepository(private val mindStackDao: MindStackDao) {
         // Insertamos el rol por defecto (id=1) para que el registro no falle
         mindStackDao.insertRol(Rol(id = 1, rol = "Usuario"))
         mindStackDao.insertRol(Rol(id = 2, rol = "Administrador"))
+        
+        // Insertamos estados por defecto
         mindStackDao.insertStatus(Status(id = 1, color = "#4CAF50", description = "Estable"))
-        mindStackDao.insertMood(MoodEntity(id = 1, mood = "Neutral"))
+        mindStackDao.insertStatus(Status(id = 2, color = "#FFC107", description = "Alerta"))
+        mindStackDao.insertStatus(Status(id = 3, color = "#F44336", description = "Crítico"))
+
+        // Insertamos estados de ánimo por defecto
+        mindStackDao.insertMood(MoodEntity(id = 1, mood = "Exhausto"))
+        mindStackDao.insertMood(MoodEntity(id = 2, mood = "Triste"))
+        mindStackDao.insertMood(MoodEntity(id = 3, mood = "Neutral"))
+        mindStackDao.insertMood(MoodEntity(id = 4, mood = "Feliz"))
+        mindStackDao.insertMood(MoodEntity(id = 5, mood = "Excelente"))
+        
+        // Insertamos los juegos por defecto si no existen
+        mindStackDao.insertJuego(Juego(id = 1, nombre = "Memorama", descripcion = "Entrena tu memoria visual"))
+        mindStackDao.insertJuego(Juego(id = 2, nombre = "Memoria de Trabajo", descripcion = "Secuencia de luces (3x3)"))
     }
 
     // Usuarios
@@ -25,7 +39,10 @@ class MindStackRepository(private val mindStackDao: MindStackDao) {
     fun getUserById(id: Int): Flow<User?> = mindStackDao.getUserById(id)
 
     // Check-ins
-    suspend fun insertDailyCheckin(checkin: DailyCheckin) = mindStackDao.insertDailyCheckin(checkin)
+    suspend fun insertDailyCheckin(checkin: DailyCheckin) {
+        checkAndInsertBasicData()
+        mindStackDao.insertDailyCheckin(checkin)
+    }
     fun getCheckinsByUser(userId: Int): Flow<List<DailyCheckin>> = mindStackDao.getCheckinsByUser(userId)
 
     // Catálogos
@@ -35,7 +52,10 @@ class MindStackRepository(private val mindStackDao: MindStackDao) {
 
     // Juegos
     suspend fun insertJuego(juego: Juego) = mindStackDao.insertJuego(juego)
-    suspend fun insertGameSession(session: GameSession) = mindStackDao.insertGameSession(session)
+    suspend fun insertGameSession(session: GameSession) {
+        checkAndInsertBasicData()
+        mindStackDao.insertGameSession(session)
+    }
     fun getGameSessionsByUser(userId: Int): Flow<List<GameSession>> = mindStackDao.getGameSessionsByUser(userId)
 
     // Mensajes

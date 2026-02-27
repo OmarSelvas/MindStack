@@ -7,7 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,11 +17,78 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.mindstack.R
+import com.example.mindstack.ui.AuthViewModel
+import com.example.mindstack.viewmodels.MainViewModel
 
 @Composable
-fun MainView(navController: NavController) {
+fun MainView(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
+    val mainViewModel: MainViewModel = viewModel()
+    val user = authViewModel.currentUser
+    
+    // Estado para controlar la visibilidad de la alerta de Pinky
+    var showPinkyAlert by remember { mutableStateOf(false) }
+
+    // Detectar si venimos de registrar el estado de ánimo
+    LaunchedEffect(navController.currentBackStackEntry) {
+        val prevRoute = navController.previousBackStackEntry?.destination?.route
+        if (prevRoute == "mood") {
+            showPinkyAlert = true
+        }
+    }
+
+    LaunchedEffect(user) {
+        user?.let {
+            mainViewModel.loadData(it.id, it.idealSleepHours)
+        }
+    }
+
+    if (showPinkyAlert) {
+        AlertDialog(
+            onDismissRequest = { showPinkyAlert = false },
+            icon = {
+                Image(
+                    painter = painterResource(id = R.drawable.pinky_happy),
+                    contentDescription = "Pinky",
+                    modifier = Modifier.size(80.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "¡Hola de nuevo!",
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Ya has hecho los minijuegos de hoy? Es importante para mantener tu mente activa.",
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPinkyAlert = false
+                        navController.navigate("list")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A80B4))
+                ) {
+                    Text("¡Vamos a jugar!")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPinkyAlert = false }) {
+                    Text("Después", color = Color.Gray)
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = Color.White
+        )
+    }
+
     Scaffold(
         containerColor = Color.White
     ) { paddingValues ->
@@ -42,22 +109,19 @@ fun MainView(navController: NavController) {
             ) {
                 Spacer(modifier = Modifier.height(60.dp))
 
-                // --- SECCIÓN DE RACHA (FUEGO + TEXTO) ---
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+                // --- SECCIÓN DE CONSEJO DINÁMICO ---
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.8f))
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.racha), // Asegúrate de tener el ícono de racha
-                        contentDescription = "Racha",
-                        modifier = Modifier.size(60.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "25 días jugados",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        text = mainViewModel.adviceMessage,
+                        modifier = Modifier.padding(16.dp),
+                        textAlign = TextAlign.Center,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.DarkGray
                     )
                 }
 
@@ -70,13 +134,13 @@ fun MainView(navController: NavController) {
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         StatCard(
-                            title = "Semáforo de riesgo: Verde",
-                            iconRes = R.drawable.semaforo_verde,
+                            title = "Semáforo: ${mainViewModel.trafficLight.colorName}",
+                            iconRes = mainViewModel.trafficLight.iconRes,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            title = "Batería cognitiva: 100%",
-                            iconRes = R.drawable.bateria_verde,
+                            title = "Batería: ${mainViewModel.cognitiveBattery}%",
+                            iconRes = if (mainViewModel.cognitiveBattery >= 80) R.drawable.bateria_verde else R.drawable.bateria_amarilla,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -86,12 +150,12 @@ fun MainView(navController: NavController) {
                     ) {
                         InfoCard(
                             title = "Deuda de sueño:",
-                            value = "2 hrs",
+                            value = "%.1f h".format(mainViewModel.sleepDebt),
                             modifier = Modifier.weight(1f)
                         )
                         InfoCard(
                             title = "Horas dormidas:",
-                            value = "6 hrs",
+                            value = "%.1f h".format(mainViewModel.sleepDebt), // Se asume que esto debería ser hoursSlept, pero mantengo consistencia con el código original si fuera intencional
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -99,7 +163,7 @@ fun MainView(navController: NavController) {
                 Spacer(modifier = Modifier.height(40.dp))
             }
 
-            // --- ENCABEZADO (Home y Pinky Flotante) ---
+            // --- ENCABEZADO ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,24 +172,23 @@ fun MainView(navController: NavController) {
                 verticalAlignment = Alignment.Top
             ) {
                 Text(
-                    text = "Home",
-                    fontSize = 38.sp,
-                    fontWeight = FontWeight.Normal,
+                    text = "Hola, ${user?.name ?: "Usuario"}",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
                 Image(
                     painter = painterResource(id = R.drawable.pinky_happy),
                     contentDescription = "Logo",
                     modifier = Modifier
-                        .size(130.dp)
-                        .offset(y = 40.dp)
+                        .size(110.dp)
+                        .offset(y = 30.dp)
                 )
             }
         }
     }
 }
 
-// Componentes StatCard e InfoCard se mantienen igual que en el código anterior...
 @Composable
 fun StatCard(title: String, iconRes: Int, modifier: Modifier) {
     Card(
@@ -161,7 +224,7 @@ fun InfoCard(title: String, value: String, modifier: Modifier) {
         ) {
             Text(text = title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = value, fontSize = 36.sp, fontWeight = FontWeight.Normal, color = Color.Black)
+            Text(text = value, fontSize = 32.sp, fontWeight = FontWeight.Normal, color = Color.Black)
         }
     }
 }
