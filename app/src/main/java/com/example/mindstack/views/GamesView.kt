@@ -38,11 +38,13 @@ fun GamesView(navController: NavController) {
         )
 
         GameCard(title = "Memorama", subtitle = "Entrena tu memoria visual") {
+            navController.navigate("memory_game")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         GameCard(title = "Juego de Reacción", subtitle = "Prueba tus reflejos") {
+            // Acción para juego de reacción
         }
     }
 }

@@ -17,7 +17,7 @@ class MindStackRepository(private val mindStackDao: MindStackDao) {
 
     // Usuarios
     suspend fun insertUser(user: User) {
-        checkAndInsertBasicData() // Nos aseguramos que el Rol exista antes de insertar al usuario
+        checkAndInsertBasicData()
         mindStackDao.insertUser(user)
     }
 

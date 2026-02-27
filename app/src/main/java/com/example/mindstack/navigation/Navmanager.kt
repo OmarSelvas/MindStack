@@ -32,13 +32,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.ui.AuthViewModel
-import com.example.mindstack.views.LoginView
-import com.example.mindstack.views.WelcomeView
-import com.example.mindstack.views.MoodView
-import com.example.mindstack.views.RegisterView
-import com.example.mindstack.views.MainView
-import com.example.mindstack.views.SettingView
-import com.example.mindstack.views.GamesView
+import com.example.mindstack.views.*
+import com.example.mindstack.viewmodels.MemoryViewModel
 
 @Composable
 fun NavManager() {
@@ -46,6 +41,7 @@ fun NavManager() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val authViewModel: AuthViewModel = viewModel()
+    val memoryViewModel: MemoryViewModel = viewModel()
 
     // Si ya hay sesión activa, saltar al main directamente
     LaunchedEffect(authViewModel.loginSuccess) {
@@ -73,6 +69,7 @@ fun NavManager() {
                 composable("mood") { MoodView(navController, authViewModel) }
                 composable("profile") { SettingView(navController, authViewModel) }
                 composable("list") { GamesView(navController) }
+                composable("memory_game") { MemoryGameView(navController, memoryViewModel) }
             }
         }
     }
@@ -93,7 +90,7 @@ fun CustomBottomBar(navController: NavController, currentRoute: String?) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list", onClick = { navController.navigate("list") })
+            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list" || currentRoute == "memory_game", onClick = { navController.navigate("list") })
             NavBarItem(Icons.Default.DateRange, currentRoute == "mood", onClick = { navController.navigate("mood") })
             NavBarItem(Icons.Default.Home, currentRoute == "main_view", onClick = { navController.navigate("main_view") })
             NavBarItem(Icons.Default.Refresh, currentRoute == "history", onClick = {  })
