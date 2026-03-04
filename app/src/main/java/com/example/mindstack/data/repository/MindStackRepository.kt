@@ -27,6 +27,7 @@ class MindStackRepository(private val mindStackDao: MindStackDao) {
         // Insertamos los juegos por defecto si no existen
         mindStackDao.insertJuego(Juego(id = 1, nombre = "Memorama", descripcion = "Entrena tu memoria visual"))
         mindStackDao.insertJuego(Juego(id = 2, nombre = "Memoria de Trabajo", descripcion = "Secuencia de luces (3x3)"))
+        mindStackDao.insertJuego(Juego(id = 3, nombre = "Neuro-Reflejo", descripcion = "Mide la velocidad de procesamiento"))
     }
 
     // Usuarios
