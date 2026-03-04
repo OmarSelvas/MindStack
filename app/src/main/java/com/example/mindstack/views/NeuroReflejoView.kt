@@ -87,11 +87,11 @@ fun NeuroReflejoView(
                     fontWeight = FontWeight.Black,
                     color = Color.White
                 )
-                
+
                 Spacer(modifier = Modifier.height(40.dp))
-                
+
                 Button(
-                    onClick = { 
+                    onClick = {
                         navController.navigate("main_view") {
                             popUpTo("main_view") { inclusive = true }
                         }
@@ -101,9 +101,9 @@ fun NeuroReflejoView(
                 ) {
                     Text("Aceptar", fontSize = 18.sp)
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 TextButton(
                     onClick = { viewModel.startGame() }
                 ) {

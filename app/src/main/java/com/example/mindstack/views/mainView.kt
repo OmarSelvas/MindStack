@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -22,71 +23,25 @@ import androidx.navigation.NavController
 import com.example.mindstack.R
 import com.example.mindstack.ui.AuthViewModel
 import com.example.mindstack.viewmodels.MainViewModel
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun MainView(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     val mainViewModel: MainViewModel = viewModel()
     val user = authViewModel.currentUser
-    
-    // Estado para controlar la visibilidad de la alerta de Pinky
-    var showPinkyAlert by remember { mutableStateOf(false) }
 
-    // Detectar si venimos de registrar el estado de ánimo
-    LaunchedEffect(navController.currentBackStackEntry) {
-        val prevRoute = navController.previousBackStackEntry?.destination?.route
-        if (prevRoute == "mood") {
-            showPinkyAlert = true
-        }
-    }
+    // Estados para alertas y registros
+    var showPinkyAlert by remember { mutableStateOf(false) }
+    var lastRecordedTime by remember { mutableStateOf("") }
+
+    // Lógica del botón según la hora
+    val currentTime = LocalTime.now()
+    val isMorning = currentTime.hour < 12
+    val actionLabel = if (isMorning) "Levantarse" else "Dormir"
 
     LaunchedEffect(user) {
-        user?.let {
-            mainViewModel.loadData(it.id, it.idealSleepHours)
-        }
-    }
-
-    if (showPinkyAlert) {
-        AlertDialog(
-            onDismissRequest = { showPinkyAlert = false },
-            icon = {
-                Image(
-                    painter = painterResource(id = R.drawable.pinky_happy),
-                    contentDescription = "Pinky",
-                    modifier = Modifier.size(80.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "¡Hola de nuevo!",
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-            },
-            text = {
-                Text(
-                    text = "¿Ya has hecho los minijuegos de hoy? Es importante para mantener tu mente activa.",
-                    textAlign = TextAlign.Center
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showPinkyAlert = false
-                        navController.navigate("list")
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A80B4))
-                ) {
-                    Text("¡Vamos a jugar!")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPinkyAlert = false }) {
-                    Text("Después", color = Color.Gray)
-                }
-            },
-            shape = RoundedCornerShape(28.dp),
-            containerColor = Color.White
-        )
+        user?.let { mainViewModel.loadData(it.id, it.idealSleepHours) }
     }
 
     Scaffold(
@@ -97,134 +52,182 @@ fun MainView(navController: NavController, authViewModel: AuthViewModel = viewMo
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // --- PANEL AZUL INFERIOR ---
+            // --- ENCABEZADO (Home y Pinky) ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 30.dp, vertical = 20.dp)
+            ) {
+                Text(
+                    text = "Home",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.W500,
+                    color = Color.Black
+                )
+                Image(
+                    painter = painterResource(id = R.drawable.pinky_happy),
+                    contentDescription = "Pinky",
+                    modifier = Modifier
+                        .size(130.dp)
+                        .align(Alignment.TopEnd)
+                        .offset(y = (-10).dp, x = 10.dp)
+                )
+            }
+
+            // --- PANEL AZUL CLARO (Fondo Curvo) ---
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 100.dp)
+                    .padding(top = 130.dp)
                     .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
-                    .background(Color(0xFFCFDEE7))
+                    .background(Color(0xFFD4E3ED)) // Azul suave de la imagen
                     .padding(horizontal = 24.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(60.dp))
+                Spacer(modifier = Modifier.height(30.dp))
 
-                // --- SECCIÓN DE CONSEJO DINÁMICO ---
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.8f))
+                // --- SECCIÓN RACHA (Fuego y Texto) ---
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 20.dp)
                 ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.racha ),
+                        contentDescription = "Racha",
+                        modifier = Modifier.size(70.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = mainViewModel.adviceMessage,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.DarkGray
+                        text = "25 días jugados", // Valor dinámico: "${mainViewModel.streak} días jugados"
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+
+                // --- MENSAJE / CONSEJO ---
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(
+                            text = mainViewModel.adviceMessage.ifEmpty { "Mensaje/consejo" },
+                            fontSize = 22.sp,
+                            textAlign = TextAlign.Center,
+                            color = Color.DarkGray
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // --- CUADRÍCULA DE TARJETAS ---
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CustomStatCard(
+                        label = "Semáforo de riesgo:",
+                        value = mainViewModel.trafficLight.colorName,
+                        iconRes = mainViewModel.trafficLight.iconRes,
+                        modifier = Modifier.weight(1f)
+                    )
+                    CustomStatCard(
+                        label = "Batería cognitiva:",
+                        value = "${mainViewModel.cognitiveBattery}%",
+                        iconRes = if (mainViewModel.cognitiveBattery >= 80) R.drawable.bateria_verde else R.drawable.bateria_amarilla,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CustomInfoCard(
+                        label = "Deuda de sueño:",
+                        value = "%.0f hrs".format(mainViewModel.sleepDebt),
+                        modifier = Modifier.weight(1f)
+                    )
+                    CustomInfoCard(
+                        label = "Horas dormidas:",
+                        value = "6 hrs", // Valor ejemplo
+                        modifier = Modifier.weight(1f)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // Cuadrícula de tarjetas
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        StatCard(
-                            title = "Semáforo: ${mainViewModel.trafficLight.colorName}",
-                            iconRes = mainViewModel.trafficLight.iconRes,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Batería: ${mainViewModel.cognitiveBattery}%",
-                            iconRes = if (mainViewModel.cognitiveBattery >= 80) R.drawable.bateria_verde else R.drawable.bateria_amarilla,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        InfoCard(
-                            title = "Deuda de sueño:",
-                            value = "%.1f h".format(mainViewModel.sleepDebt),
-                            modifier = Modifier.weight(1f)
-                        )
-                        InfoCard(
-                            title = "Horas dormidas:",
-                            value = "%.1f h".format(mainViewModel.sleepDebt), // Se asume que esto debería ser hoursSlept, pero mantengo consistencia con el código original si fuera intencional
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(40.dp))
-            }
-
-            // --- ENCABEZADO ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 30.dp, end = 20.dp, top = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = "Hola, ${user?.name ?: "Usuario"}",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Image(
-                    painter = painterResource(id = R.drawable.pinky_happy),
-                    contentDescription = "Logo",
+                // --- BOTÓN LEVANTARSE / DORMIR ---
+                Button(
+                    onClick = {
+                        val now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+                        lastRecordedTime = "Registrado: $now"
+                    },
                     modifier = Modifier
-                        .size(110.dp)
-                        .offset(y = 30.dp)
-                )
+                        .width(220.dp)
+                        .height(55.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5589B7)),
+                    shape = RoundedCornerShape(25.dp)
+                ) {
+                    Text(text = actionLabel, fontSize = 22.sp, fontWeight = FontWeight.Normal)
+                }
+
+                if (lastRecordedTime.isNotEmpty()) {
+                    Text(lastRecordedTime, modifier = Modifier.padding(top = 8.dp), color = Color.Gray)
+                }
+
+                Spacer(modifier = Modifier.height(100.dp)) // Espacio para el Navbar
             }
         }
     }
 }
 
 @Composable
-fun StatCard(title: String, iconRes: Int, modifier: Modifier) {
+fun CustomStatCard(label: String, value: String, iconRes: Int, modifier: Modifier) {
     Card(
-        modifier = modifier.height(160.dp),
-        shape = RoundedCornerShape(24.dp),
+        modifier = modifier.height(180.dp),
+        shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = title, textAlign = TextAlign.Center, fontSize = 14.sp, color = Color.Black, lineHeight = 18.sp)
-            Spacer(modifier = Modifier.height(12.dp))
-            Image(painter = painterResource(id = iconRes), contentDescription = null, modifier = Modifier.size(55.dp))
+            Text(label, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = Color.Black)
+            Text(value, fontSize = 16.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(10.dp))
+            Image(painter = painterResource(id = iconRes), contentDescription = null, modifier = Modifier.size(65.dp))
         }
     }
 }
 
 @Composable
-fun InfoCard(title: String, value: String, modifier: Modifier) {
+fun CustomInfoCard(label: String, value: String, modifier: Modifier) {
     Card(
-        modifier = modifier.height(160.dp),
-        shape = RoundedCornerShape(24.dp),
+        modifier = modifier.height(180.dp),
+        shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = value, fontSize = 32.sp, fontWeight = FontWeight.Normal, color = Color.Black)
+            Text(label, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = Color.Black)
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(value, fontSize = 38.sp, fontWeight = FontWeight.Light, color = Color.Black)
         }
     }
 }

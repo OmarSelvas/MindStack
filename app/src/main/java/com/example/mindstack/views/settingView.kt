@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Info // Importado para el botón "Acerca de"
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,7 +29,10 @@ import com.example.mindstack.ui.AuthViewModel
 fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
     val user = authViewModel.currentUser
     var isEditing by remember { mutableStateOf(false) }
-    
+
+    // --- ESTADO PARA EL MODAL ---
+    var showAboutDialog by remember { mutableStateOf(false) }
+
     if (user == null) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -47,6 +51,28 @@ fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
     var email by remember { mutableStateOf(user.email) }
     var dob by remember { mutableStateOf(user.dateOfBirth) }
 
+    // --- LÓGICA DEL MODAL EMERGENTE ---
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = { Text(text = "Acerca de la App", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    text = "Esta aplicación no reemplaza un diagnóstico médico profesional. " +
+                            "Simplemente sirve como sugerencias para ayudarle a regular su sueño.",
+                    fontSize = 16.sp
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text("Entendido", color = Color(0xFFA294E3))
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color.White
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -63,13 +89,26 @@ fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = { 
-                authViewModel.logout()
-                navController.navigate("welcome") {
-                    popUpTo(0)
+
+            // FILA DE BOTONES DE ACCIÓN
+            Row {
+                // NUEVO BOTÓN "ACERCA DE"
+                IconButton(onClick = { showAboutDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Acerca de",
+                        tint = Color.Black
+                    )
                 }
-            }) {
-                Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = Color.Black)
+
+                IconButton(onClick = {
+                    authViewModel.logout()
+                    navController.navigate("welcome") {
+                        popUpTo(0)
+                    }
+                }) {
+                    Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = Color.Black)
+                }
             }
         }
 

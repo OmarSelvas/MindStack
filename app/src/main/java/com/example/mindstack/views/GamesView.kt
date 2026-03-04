@@ -30,28 +30,37 @@ fun GamesView(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Juegos Mentales",
+            text = "Batería Cognitiva",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        GameCard(title = "Memorama", subtitle = "Entrena tu memoria visual") {
+        GameCard(
+            title = "Tap-Tap",
+            subtitle = "Velocidad de procesamiento"
+        ) {
+            navController.navigate("neuro_reflejo")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        GameCard(
+            title = "Memorama",
+            subtitle = "Entrena tu memoria visual"
+        ) {
             navController.navigate("memory_game")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        GameCard(title = "Memoria de Trabajo", subtitle = "Secuencia de luces (3x3)") {
-            navController.navigate("working_memory_game")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GameCard(title = "Juego de Reacción", subtitle = "Prueba tus reflejos") {
-            // Acción para juego de reacción
-        }
+        Text(
+            text = "Completa ambos para una mejor medición",
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.secondary,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -60,13 +69,13 @@ fun GameCard(title: String, subtitle: String, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier
-            .fillMaxWidth(0.8f)
-            .height(120.dp),
-        shape = RoundedCornerShape(16.dp),
+            .fillMaxWidth(0.85f)
+            .height(110.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
             modifier = Modifier
@@ -77,9 +86,11 @@ fun GameCard(title: String, subtitle: String, onClick: () -> Unit) {
         ) {
             Text(
                 text = title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = subtitle,
                 fontSize = 14.sp,
