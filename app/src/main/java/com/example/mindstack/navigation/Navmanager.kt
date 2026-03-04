@@ -33,8 +33,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.ui.AuthViewModel
 import com.example.mindstack.views.*
+import com.example.mindstack.viewmodels.NeuroReflejoViewModel
 import com.example.mindstack.viewmodels.MemoryViewModel
-import com.example.mindstack.viewmodels.WorkingMemoryViewModel
+import com.example.mindstack.viewmodels.HistoryViewModel
 
 @Composable
 fun NavManager() {
@@ -42,8 +43,9 @@ fun NavManager() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val authViewModel: AuthViewModel = viewModel()
+    val neuroReflejoViewModel: NeuroReflejoViewModel = viewModel()
     val memoryViewModel: MemoryViewModel = viewModel()
-    val workingMemoryViewModel: WorkingMemoryViewModel = viewModel()
+    val historyViewModel: HistoryViewModel = viewModel()
 
     // Si ya hay sesión activa, saltar al main directamente
     LaunchedEffect(authViewModel.loginSuccess) {
@@ -67,12 +69,13 @@ fun NavManager() {
                 composable("welcome") { WelcomeView(navController) }
                 composable("login_view") { LoginView(navController, authViewModel) }
                 composable("register_view") { RegisterView(navController, authViewModel) }
-                composable("main_view") { MainView(navController) }
+                composable("main_view") { MainView(navController, authViewModel) }
                 composable("mood") { MoodView(navController, authViewModel) }
                 composable("profile") { SettingView(navController, authViewModel) }
                 composable("list") { GamesView(navController) }
+                composable("neuro_reflejo") { NeuroReflejoView(navController, authViewModel, neuroReflejoViewModel) }
                 composable("memory_game") { MemoryGameView(navController, memoryViewModel) }
-                composable("working_memory_game") { WorkingMemoryView(navController, authViewModel, workingMemoryViewModel) }
+                composable("history") { HistoryView(authViewModel, historyViewModel) }
             }
         }
     }
@@ -93,10 +96,10 @@ fun CustomBottomBar(navController: NavController, currentRoute: String?) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list" || currentRoute == "memory_game" || currentRoute == "working_memory_game", onClick = { navController.navigate("list") })
+            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list" || currentRoute == "neuro_reflejo" || currentRoute == "memory_game", onClick = { navController.navigate("list") })
             NavBarItem(Icons.Default.DateRange, currentRoute == "mood", onClick = { navController.navigate("mood") })
             NavBarItem(Icons.Default.Home, currentRoute == "main_view", onClick = { navController.navigate("main_view") })
-            NavBarItem(Icons.Default.Refresh, currentRoute == "history", onClick = {  })
+            NavBarItem(Icons.Default.Refresh, currentRoute == "history", onClick = { navController.navigate("history") })
             NavBarItem(Icons.Default.AccountCircle, currentRoute == "profile", onClick = { navController.navigate("profile") })
         }
     }
