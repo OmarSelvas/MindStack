@@ -86,4 +86,11 @@ dependencies {
     implementation("androidx.room:room-paging:$room_version")
 
     ksp("com.google.dagger:dagger-compiler:2.51.1")
+
+    // Retrofit para peticiones API
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    // Conversor GSON para convertir JSON a objetos Kotlin
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // Interceptor para ver logs de las peticiones (opcional pero recomendado)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }

@@ -8,35 +8,32 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mindstack.data.AppDatabase
+import com.example.mindstack.data.RetrofitClient
 import com.example.mindstack.data.entities.User
-import com.example.mindstack.data.repository.MindStackRepository
+import com.example.mindstack.data.network.LoginRequest
+import com.example.mindstack.data.network.RegisterRequest
 import kotlinx.coroutines.launch
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: MindStackRepository
+
+    private val db = AppDatabase.getDatabase(application)
+    private val mindStackDao = db.mindStackDao()
     private val sharedPreferences = application.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
 
+    var currentUser by mutableStateOf<User?>(null)
+    var errorMessage by mutableStateOf<String?>(null)
+    var isLoading by mutableStateOf(false)
+    var loginSuccess by mutableStateOf(false)
+
     init {
-        val dao = AppDatabase.getDatabase(application).mindStackDao()
-        repository = MindStackRepository(dao)
         checkSession()
     }
 
-    // Usuario actualmente logueado
-    var currentUser by mutableStateOf<User?>(null)
-
-    // Estados para login y registro
-    var errorMessage by mutableStateOf<String?>(null)
-    var isLoading by mutableStateOf(false)
-    var registrationSuccess by mutableStateOf(false)
-    var loginSuccess by mutableStateOf(false)
-
-    // Verificar si hay una sesión guardada
     private fun checkSession() {
         val userEmail = sharedPreferences.getString("user_email", null)
         if (userEmail != null) {
             viewModelScope.launch {
-                val user = repository.getUserByEmail(userEmail)
+                val user = mindStackDao.getUserByEmail(userEmail)
                 if (user != null) {
                     currentUser = user
                     loginSuccess = true
@@ -45,20 +42,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Función para registrar usuario
-    fun registerUser(name: String, lastName: String, email: String, password: String, dob: String) {
-        if (name.isBlank() || lastName.isBlank() || email.isBlank() || password.isBlank() || dob.isBlank()) {
+    fun registerUser(
+        name: String,
+        lastName: String,
+        email: String,
+        pass: String,
+        dob: String,
+        gender: String,
+        idealSleep: Double
+    ) {
+        if (name.isBlank() || lastName.isBlank() || email.isBlank() || pass.isBlank() || dob.isBlank()) {
             errorMessage = "Todos los campos son obligatorios"
-            return
-        }
-
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            errorMessage = "Correo electrónico no válido"
-            return
-        }
-
-        if (password.length < 6) {
-            errorMessage = "La contraseña debe tener al menos 6 caracteres"
             return
         }
 
@@ -66,69 +60,97 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             isLoading = true
             errorMessage = null
             try {
-                val existingUser = repository.getUserByEmail(email)
-                if (existingUser != null) {
-                    errorMessage = "Este correo ya está registrado"
-                } else {
+                // Se construye el request con el endpoint api/v1/auth/register
+                val request = RegisterRequest(
+                    name = name,
+                    lastName = lastName,
+                    email = email,
+                    password = pass,
+                    dateOfBirth = dob,
+                    gender = gender,
+                    idealSleepHours = idealSleep
+                )
+
+                val response = RetrofitClient.authService.register(request)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val authData = response.body()!!
+
                     val newUser = User(
+                        id = authData.userId,
                         name = name,
                         lastName = lastName,
                         email = email,
-                        password = password,
+                        password = pass,
                         dateOfBirth = dob,
-                        gender = "No especificado",
+                        gender = gender,
                         idRol = 1,
-                        idealSleepHours = 8f
+                        idealSleepHours = idealSleep.toFloat()
                     )
-                    repository.insertUser(newUser)
-                    // Auto-login tras registro exitoso
+
+                    mindStackDao.insertUser(newUser)
+                    saveSession(email, authData.token)
                     currentUser = newUser
-                    sharedPreferences.edit().putString("user_email", email).apply()
-                    registrationSuccess = true
                     loginSuccess = true
+                } else {
+                    errorMessage = "Error: El correo ya existe o formato inválido"
                 }
             } catch (e: Exception) {
-                errorMessage = "Error al guardar: ${e.message}"
+                errorMessage = "Error al conectar con Render (Servidor despertando...)"
             } finally {
                 isLoading = false
             }
         }
     }
 
-    // Función para iniciar sesión
     fun login(email: String, pass: String) {
-        if (email.isBlank() || pass.isBlank()) {
-            errorMessage = "Ingresa tus credenciales"
-            return
-        }
-
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             try {
-                val user = repository.getUserByEmail(email)
-                if (user != null && user.password == pass) {
+                val response = RetrofitClient.authService.login(LoginRequest(email, pass))
+                if (response.isSuccessful && response.body() != null) {
+                    val authData = response.body()!!
+                    var user = mindStackDao.getUserByEmail(email)
+                    if (user == null) {
+                        user = User(
+                            id = authData.userId,
+                            name = authData.name,
+                            lastName = "",
+                            email = email,
+                            password = pass,
+                            dateOfBirth = "",
+                            gender = "",
+                            idRol = 1,
+                            idealSleepHours = 8f
+                        )
+                        mindStackDao.insertUser(user)
+                    }
+                    saveSession(email, authData.token)
                     currentUser = user
-                    sharedPreferences.edit().putString("user_email", email).apply()
                     loginSuccess = true
                 } else {
                     errorMessage = "Correo o contraseña incorrectos"
                 }
             } catch (e: Exception) {
-                errorMessage = "Error al iniciar sesión"
+                errorMessage = "Error de conexión"
             } finally {
                 isLoading = false
             }
         }
     }
-    
-    fun clearError() {
-        errorMessage = null
+
+    private fun saveSession(email: String, token: String) {
+        sharedPreferences.edit().apply {
+            putString("user_email", email)
+            putString("auth_token", token)
+            apply()
+        }
     }
 
     fun logout() {
         currentUser = null
         loginSuccess = false
-        sharedPreferences.edit().remove("user_email").apply()
+        sharedPreferences.edit().clear().apply()
     }
 }

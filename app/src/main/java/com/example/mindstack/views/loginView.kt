@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -25,6 +26,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    // Observar el éxito del login para navegar al Home
     LaunchedEffect(authViewModel.loginSuccess) {
         if (authViewModel.loginSuccess) {
             navController.navigate("main_view") {
@@ -33,7 +35,6 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
         }
     }
 
-    // ACTUALIZACIÓN: Se agregaron focusedTextColor y unfocusedTextColor
     val textFieldColors = TextFieldDefaults.colors(
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black,
@@ -81,8 +82,15 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
                 .padding(horizontal = 40.dp, vertical = 50.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Mostrar mensaje de error si existe en el ViewModel
             authViewModel.errorMessage?.let { error ->
-                Text(text = error, color = Color.Red, modifier = Modifier.padding(bottom = 8.dp))
+                Text(
+                    text = error,
+                    color = Color.Red,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Text(
@@ -97,7 +105,8 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = textFieldColors,
-                singleLine = true
+                singleLine = true,
+                placeholder = { Text("ejemplo@correo.com", color = Color.Gray) }
             )
 
             Spacer(modifier = Modifier.height(25.dp))
@@ -120,9 +129,14 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
 
             Spacer(modifier = Modifier.height(50.dp))
 
+            // Cambiar botón por indicador de carga si está procesando
             if (authViewModel.isLoading) {
-                // Cambié el indicador a azul para que se vea sobre el fondo azul claro
-                CircularProgressIndicator(color = Color(0xFF4A80B4))
+                CircularProgressIndicator(
+                    color = Color(0xFF4A80B4),
+                    modifier = Modifier.size(50.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Conectando con el servidor...", fontSize = 12.sp, color = Color.Gray)
             } else {
                 Button(
                     onClick = {

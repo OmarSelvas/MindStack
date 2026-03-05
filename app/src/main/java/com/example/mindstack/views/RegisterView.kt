@@ -3,6 +3,7 @@ package com.example.mindstack.views
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -34,173 +36,128 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var surnames by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val context = LocalContext.current
+    var gender by remember { mutableStateOf("Femenino") }
+    var idealHours by remember { mutableStateOf("8.0") }
 
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
 
     val selectedDate = datePickerState.selectedDateMillis?.let {
-        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it))
+        val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        format.timeZone = TimeZone.getTimeZone("UTC")
+        format.format(Date(it))
     } ?: ""
 
     LaunchedEffect(authViewModel.loginSuccess) {
         if (authViewModel.loginSuccess) {
-            Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
-            navController.navigate("main_view") {
-                popUpTo("register_view") { inclusive = true }
-            }
+            Toast.makeText(context, "¡Bienvenido/a!", Toast.LENGTH_SHORT).show()
+            navController.navigate("main_view") { popUpTo(0) }
         }
     }
 
-    // ACTUALIZACIÓN: Colores configurados para que el texto sea negro y visible
     val textFieldColors = TextFieldDefaults.colors(
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black,
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
-        disabledContainerColor = Color.White,
         focusedIndicatorColor = Color.Transparent,
         unfocusedIndicatorColor = Color.Transparent,
-        disabledIndicatorColor = Color.Transparent,
         cursorColor = Color.Black
     )
 
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("OK", color = Color(0xFF4A80B4))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancelar")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+            confirmButton = { TextButton(onClick = { showDatePicker = false }) { Text("OK") } }
+        ) { DatePicker(state = datePickerState) }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFD6D6D6)),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color(0xFFD6D6D6))
+            .imePadding() // Evita que el teclado tape los campos
     ) {
         Spacer(modifier = Modifier.height(50.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = R.drawable.pinky_happy),
-                contentDescription = null,
-                modifier = Modifier.size(70.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Mindstack",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black
-            )
+        Row(Modifier.fillMaxWidth(), Arrangement.Center, Alignment.CenterVertically) {
+            Image(painterResource(R.drawable.pinky_happy), null, Modifier.size(60.dp))
+            Spacer(Modifier.width(10.dp))
+            Text("Mindstack", fontSize = 30.sp, color = Color.Black)
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
                 .background(Color(0xFFCFDEE7))
-                .padding(horizontal = 40.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(horizontal = 35.dp)
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(30.dp))
 
-            authViewModel.errorMessage?.let { error ->
-                Text(text = error, color = Color.Red, modifier = Modifier.padding(bottom = 8.dp))
+            authViewModel.errorMessage?.let {
+                Text(it, color = Color.Red, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
             }
 
             CustomLabel("Nombre(s):")
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(25.dp),
-                colors = textFieldColors,
-                singleLine = true
-            )
+            TextField(name, { name = it }, Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp), colors = textFieldColors)
 
-            Spacer(modifier = Modifier.height(15.dp))
-
+            Spacer(Modifier.height(12.dp))
             CustomLabel("Apellidos:")
-            TextField(
-                value = surnames,
-                onValueChange = { surnames = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(25.dp),
-                colors = textFieldColors,
-                singleLine = true
-            )
+            TextField(surnames, { surnames = it }, Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp), colors = textFieldColors)
 
-            Spacer(modifier = Modifier.height(15.dp))
-
-            CustomLabel("Fecha de nacimiento:")
-            Card(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth().height(55.dp),
-                shape = RoundedCornerShape(25.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = if (selectedDate.isEmpty()) "Seleccionar fecha" else selectedDate,
-                        color = if (selectedDate.isEmpty()) Color.Gray else Color.Black,
-                        fontSize = 16.sp
-                    )
-                    Icon(imageVector = Icons.Default.DateRange, contentDescription = null, tint = Color.Gray)
+            Spacer(Modifier.height(12.dp))
+            CustomLabel("Género:")
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+                listOf("Femenino", "Masculino", "Otro").forEach { option ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(gender == option, { gender = option })
+                        Text(option, fontSize = 14.sp, color = Color.Black)
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(15.dp))
+            Spacer(Modifier.height(12.dp))
+            CustomLabel("Horas de sueño ideales:")
+            TextField(idealHours, { idealHours = it }, Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp), colors = textFieldColors)
 
+            Spacer(Modifier.height(12.dp))
+            CustomLabel("Fecha de nacimiento:")
+            Box(
+                Modifier.fillMaxWidth().height(55.dp).clip(RoundedCornerShape(25.dp))
+                    .background(Color.White).clickable { showDatePicker = true }.padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                    Text(if(selectedDate.isEmpty()) "Seleccionar" else selectedDate, color = if(selectedDate.isEmpty()) Color.Gray else Color.Black)
+                    Icon(Icons.Default.DateRange, null, tint = Color.Gray)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
             CustomLabel("Correo:")
-            TextField(
-                value = email,
-                onValueChange = { email = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(25.dp),
-                colors = textFieldColors,
-                singleLine = true
-            )
+            TextField(email, { email = it }, Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp), colors = textFieldColors)
 
-            Spacer(modifier = Modifier.height(15.dp))
-
+            Spacer(Modifier.height(12.dp))
             CustomLabel("Contraseña:")
-            TextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(25.dp),
-                colors = textFieldColors,
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = true
-            )
+            TextField(password, { password = it }, Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp), colors = textFieldColors, visualTransformation = PasswordVisualTransformation())
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(Modifier.height(35.dp))
 
             if (authViewModel.isLoading) {
                 CircularProgressIndicator(color = Color(0xFF4A80B4))
             } else {
                 Button(
                     onClick = {
-                        authViewModel.registerUser(name, surnames, email, password, selectedDate)
+                        authViewModel.registerUser(
+                            name, surnames, email, password, selectedDate, gender, idealHours.toDoubleOrNull() ?: 8.0
+                        )
                     },
                     modifier = Modifier.width(220.dp).height(55.dp),
                     shape = RoundedCornerShape(28.dp),
@@ -209,12 +166,12 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                     Text("Registrarse", color = Color.White, fontSize = 18.sp)
                 }
             }
-
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(50.dp))
         }
     }
 }
 
+// --- FUNCIÓN CORREGIDA ---
 @Composable
 fun CustomLabel(text: String) {
     Text(
@@ -222,7 +179,8 @@ fun CustomLabel(text: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 12.dp, bottom = 4.dp),
-        fontSize = 16.sp,
-        color = Color.Black
+        fontSize = 15.sp, // Parámetro con nombre
+        color = Color.Black, // Parámetro con nombre
+        fontWeight = FontWeight.Medium // Parámetro con nombre
     )
 }
