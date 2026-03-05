@@ -5,11 +5,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,14 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindstack.R
-import com.example.mindstack.data.AppDatabase
-import com.example.mindstack.data.entities.DailyCheckin
-import com.example.mindstack.data.repository.MindStackRepository
 import com.example.mindstack.ui.AuthViewModel
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
+import com.example.mindstack.ui.CheckInViewModel
 
+// 1. LA LISTA DEBE ESTAR DISPONIBLE (Asegúrate de que los R.drawable existan)
 data class MoodItem(val name: String, val color: Color, val imageRes: Int)
 
 val listaMoods = listOf(
@@ -46,12 +41,17 @@ val listaMoods = listOf(
 )
 
 @Composable
-fun MoodView(navController: NavController, authViewModel: AuthViewModel) {
-    var selectedMoodIndex by remember { mutableIntStateOf(2) }
+fun MoodView(
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    checkInViewModel: CheckInViewModel
+) {
+    // Sincronización con el ID del ViewModel
+    var selectedMoodIndex by remember {
+        mutableIntStateOf(checkInViewModel.selectedMoodId?.let { it - 1 } ?: 2)
+    }
     val currentMood = listaMoods[selectedMoodIndex]
     val context = LocalContext.current
-    val user = authViewModel.currentUser
-    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(containerColor = Color(0xFFEFEEE0)) { paddingValues ->
         Column(
@@ -62,7 +62,8 @@ fun MoodView(navController: NavController, authViewModel: AuthViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(30.dp))
-            Text("Indica tu estado de ánimo", fontSize = 28.sp, fontWeight = FontWeight.Black)
+
+            Text("Indica tu estado de ánimo", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color.Black)
             Text("Me siento ${currentMood.name.lowercase()}", fontSize = 18.sp, color = Color.DarkGray)
 
             Spacer(modifier = Modifier.weight(0.5f))
@@ -70,14 +71,14 @@ fun MoodView(navController: NavController, authViewModel: AuthViewModel) {
             Image(
                 painter = painterResource(id = currentMood.imageRes),
                 contentDescription = null,
-                modifier = Modifier.size(140.dp)
+                modifier = Modifier.size(150.dp)
             )
 
             Spacer(modifier = Modifier.weight(0.5f))
 
-            Text("▼", fontSize = 20.sp, color = Color(0xFF3E2723))
+            Text("▼", fontSize = 24.sp, color = Color(0xFF3E2723))
 
-            // Dimensiones de la versión anterior (180.dp de altura)
+            // Ruleta
             Box(
                 modifier = Modifier.fillMaxWidth().height(180.dp),
                 contentAlignment = Alignment.BottomCenter
@@ -92,32 +93,15 @@ fun MoodView(navController: NavController, authViewModel: AuthViewModel) {
 
             Button(
                 onClick = {
-                    user?.let { u ->
-                        coroutineScope.launch {
-                            try {
-                                val dao = AppDatabase.getDatabase(context).mindStackDao()
-                                val repository = MindStackRepository(dao)
-                                val checkin = DailyCheckin(
-                                    idUser = u.id,
-                                    sleepStart = null, sleepEnd = null,
-                                    hoursSleep = 8.0f,
-                                    idMood = selectedMoodIndex + 1,
-                                    idStatus = 1,
-                                    dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date()),
-                                    sleepDebt = 0f, battery = 100
-                                )
-                                repository.insertDailyCheckin(checkin)
-                                Toast.makeText(context, "Guardado", Toast.LENGTH_SHORT).show()
-                                navController.navigate("main_view")
-                            } catch (e: Exception) { }
-                        }
-                    }
+                    checkInViewModel.updateMood(selectedMoodIndex + 1)
+                    Toast.makeText(context, "Estado de ánimo guardado", Toast.LENGTH_SHORT).show()
+                    navController.popBackStack()
                 },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(50.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(55.dp),
                 shape = RoundedCornerShape(25.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A80B4))
             ) {
-                Text("Confirmar Registro", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Confirmar Humor", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
             Spacer(modifier = Modifier.height(30.dp))
         }
@@ -128,56 +112,48 @@ fun MoodView(navController: NavController, authViewModel: AuthViewModel) {
 fun MoodWheelCircularInfinita(selectedIndex: Int, onMoodChange: (Int) -> Unit) {
     val totalSegments = listaMoods.size
     val segmentAngle = 360f / totalSegments
-
-    // Estado para acumular la rotación y evitar que "rebote" al dar la vuelta
-    var rotationOffset by remember { mutableFloatStateOf(0f) }
-    var accumulatedDrag by remember { mutableFloatStateOf(0f) }
-
-    // Sincronizar el offset con el índice de forma infinita
-    LaunchedEffect(selectedIndex) {
-        val targetRotation = -(selectedIndex * segmentAngle)
-        // Lógica para encontrar el camino más corto en el círculo
-        var diff = (targetRotation - rotationOffset) % 360f
-        if (diff > 180f) diff -= 360f
-        if (diff < -180f) diff += 360f
-        rotationOffset += diff
-    }
+    val baseOffset = 270f - (segmentAngle / 2f)
 
     val rotationAnim by animateFloatAsState(
-        targetValue = rotationOffset + 270f - (segmentAngle / 2f),
-        animationSpec = tween(400),
+        targetValue = baseOffset - (selectedIndex * segmentAngle),
+        animationSpec = tween(durationMillis = 400),
         label = "wheelRotation"
     )
 
-    Canvas(modifier = Modifier
-        .fillMaxWidth()
-        .height(180.dp) // Misma dimensión que la anterior
-        .pointerInput(selectedIndex) {
-            detectDragGestures(
-                onDrag = { change, dragAmount ->
-                    change.consume()
-                    accumulatedDrag += dragAmount.x
+    // CORRECCIÓN: El acumulador debe estar fuera del pointerInput para persistir
+    var dragAmountAccumulated by remember { mutableFloatStateOf(0f) }
 
-                    if (accumulatedDrag > 60f) {
-                        val prev = if (selectedIndex > 0) selectedIndex - 1 else totalSegments - 1
-                        onMoodChange(prev)
-                        accumulatedDrag = 0f
-                    } else if (accumulatedDrag < -60f) {
-                        val next = if (selectedIndex < totalSegments - 1) selectedIndex + 1 else 0
-                        onMoodChange(next)
-                        accumulatedDrag = 0f
+
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .pointerInput(selectedIndex) { // Se reinicia cuando cambia el índice para consistencia
+                detectHorizontalDragGestures(
+                    onDragEnd = { dragAmountAccumulated = 0f },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        dragAmountAccumulated += dragAmount
+
+                        val threshold = 70f
+                        if (dragAmountAccumulated > threshold) {
+                            val newIndex = if (selectedIndex > 0) selectedIndex - 1 else totalSegments - 1
+                            onMoodChange(newIndex)
+                            dragAmountAccumulated = 0f
+                        } else if (dragAmountAccumulated < -threshold) {
+                            val newIndex = if (selectedIndex < totalSegments - 1) selectedIndex + 1 else 0
+                            onMoodChange(newIndex)
+                            dragAmountAccumulated = 0f
+                        }
                     }
-                },
-                onDragEnd = { accumulatedDrag = 0f }
-            )
-        }
+                )
+            }
     ) {
         val canvasWidth = size.width
         val canvasHeight = size.height
-
-        // Centro de rotación ajustado para que se vea circular pero asome poco (como la anterior)
-        val centroRotacion = Offset(canvasWidth / 2f, canvasHeight * 1.1f)
-        val radioVisual = canvasWidth * 0.75f
+        val centroRotacion = Offset(canvasWidth / 2f, canvasHeight * 1.15f)
+        val radioVisual = canvasWidth * 0.8f
 
         rotate(degrees = rotationAnim, pivot = centroRotacion) {
             listaMoods.forEachIndexed { index, mood ->
@@ -193,11 +169,10 @@ fun MoodWheelCircularInfinita(selectedIndex: Int, onMoodChange: (Int) -> Unit) {
             }
         }
 
-        // AGUJA MARRÓN ESTÁTICA (Justo donde estaba en la anterior)
         drawCircle(
             color = Color(0xFF3E2723),
-            radius = 15.dp.toPx(),
-            center = Offset(canvasWidth / 2f, canvasHeight * 0.75f)
+            radius = 10.dp.toPx(),
+            center = Offset(canvasWidth / 2f, canvasHeight * 0.8f)
         )
     }
 }

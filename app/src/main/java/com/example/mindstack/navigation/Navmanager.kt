@@ -32,6 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.ui.AuthViewModel
+import com.example.mindstack.ui.CheckInViewModel // IMPORTANTE
 import com.example.mindstack.views.*
 import com.example.mindstack.viewmodels.NeuroReflejoViewModel
 import com.example.mindstack.viewmodels.MemoryViewModel
@@ -42,12 +43,15 @@ fun NavManager() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    // Inicialización de ViewModels
     val authViewModel: AuthViewModel = viewModel()
+    val checkInViewModel: CheckInViewModel = viewModel() // NUEVO: ViewModel compartido para Check-in
     val neuroReflejoViewModel: NeuroReflejoViewModel = viewModel()
     val memoryViewModel: MemoryViewModel = viewModel()
     val historyViewModel: HistoryViewModel = viewModel()
 
-    // Si ya hay sesión activa, saltar al main directamente
+    // Lógica de redirección automática si ya inició sesión
     LaunchedEffect(authViewModel.loginSuccess) {
         if (authViewModel.loginSuccess && (currentRoute == "welcome" || currentRoute == "login_view" || currentRoute == "register_view")) {
             navController.navigate("main_view") {
@@ -67,10 +71,20 @@ fun NavManager() {
         Box(modifier = Modifier.padding(innerPadding)) {
             NavHost(navController = navController, startDestination = "welcome") {
                 composable("welcome") { WelcomeView(navController) }
+
+                // Vistas de Autenticación
                 composable("login_view") { LoginView(navController, authViewModel) }
                 composable("register_view") { RegisterView(navController, authViewModel) }
-                composable("main_view") { MainView(navController, authViewModel) }
-                composable("mood") { MoodView(navController, authViewModel) }
+
+                // Vistas de Check-in (Aquí pasamos el CheckInViewModel compartido)
+                composable("main_view") {
+                    MainView(navController, authViewModel, checkInViewModel)
+                }
+                composable("mood") {
+                    MoodView(navController, authViewModel, checkInViewModel)
+                }
+
+                // Otras Vistas
                 composable("profile") { SettingView(navController, authViewModel) }
                 composable("list") { GamesView(navController) }
                 composable("neuro_reflejo") { NeuroReflejoView(navController, authViewModel, neuroReflejoViewModel) }
@@ -86,7 +100,7 @@ fun CustomBottomBar(navController: NavController, currentRoute: String?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 24.dp), 
+            .padding(bottom = 24.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(

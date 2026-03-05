@@ -5,7 +5,6 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthApiService {
-    // La ruta ahora incluye el prefijo api/v1 definido en tu backend
     @POST("api/v1/auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
 
@@ -13,23 +12,15 @@ interface AuthApiService {
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 }
 
-data class RegisterRequest(
-    val name: String,
-    val lastName: String,
-    val email: String,
-    val password: String,
-    val dateOfBirth: String,
-    val gender: String,           // Campo nuevo requerido por tu body
-    val idealSleepHours: Double   // Campo nuevo requerido por tu body
-)
-
 data class AuthResponse(
     val token: String,
-    val userId: Int,
+    val userId: Int,  // <--- Este ID es el que necesitamos para Room
     val name: String
 )
 
-data class LoginRequest(
-    val email: String,
-    val password: String
+data class LoginRequest(val email: String, val password: String)
+data class RegisterRequest(
+    val name: String, val lastName: String, val email: String,
+    val password: String, val dateOfBirth: String, val gender: String,
+    val idealSleepHours: Double
 )
