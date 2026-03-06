@@ -15,7 +15,10 @@ interface AuthApiService {
 data class AuthResponse(
     val token: String,
     val userId: Int,
-    val name: String
+    val name: String,
+    val lastName: String?,
+    val dateOfBirth: String?,
+    val idealSleepHours: Double?
 )
 
 data class LoginRequest(

@@ -25,49 +25,32 @@ import com.example.mindstack.viewmodels.HistoryViewModel
 
 @Composable
 fun HistoryView(authViewModel: AuthViewModel, viewModel: HistoryViewModel = viewModel()) {
-    val user = authViewModel.currentUser
     val historyList = viewModel.historyList
     val isLoading = viewModel.isLoading
     var selectedItem by remember { mutableStateOf<HistoryItem?>(null) }
 
-    LaunchedEffect(user) {
-        user?.let {
-            viewModel.loadHistory(it.id, it.idealSleepHours)
+    LaunchedEffect(Unit) {
+        if (authViewModel.token.isNotEmpty()) {
+            viewModel.loadHistory(authViewModel.token)
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F2E1)) // Color de fondo beige claro similar a la imagen
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-        ) {
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F2E1))) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
             Spacer(modifier = Modifier.height(48.dp))
-            Text(
-                text = "Historial",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            Text("Historial", fontSize = 32.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(24.dp))
 
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize(), Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFF4A80B4))
                 }
             } else if (historyList.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "No hay registros aún", color = Color.Gray, fontSize = 18.sp)
+                Box(modifier = Modifier.fillMaxSize(), Alignment.Center) {
+                    Text("No hay registros aún", color = Color.Gray)
                 }
             } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                    contentPadding = PaddingValues(bottom = 100.dp)
-                ) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
                     items(historyList) { item ->
                         HistoryCard(item) { selectedItem = item }
                     }
@@ -75,7 +58,6 @@ fun HistoryView(authViewModel: AuthViewModel, viewModel: HistoryViewModel = view
             }
         }
 
-        // Overlay de detalles (Dialog)
         selectedItem?.let { item ->
             HistoryDetailDialog(item) { selectedItem = null }
         }
@@ -85,61 +67,29 @@ fun HistoryView(authViewModel: AuthViewModel, viewModel: HistoryViewModel = view
 @Composable
 fun HistoryCard(item: HistoryItem, onVerMas: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(40.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(40.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                 Text(text = item.displayDate, fontSize = 14.sp, color = Color.Gray)
-                Image(
-                    painter = painterResource(id = R.drawable.pinky_happy), // Usando el cerebro rosa
-                    contentDescription = null,
-                    modifier = Modifier.size(45.dp)
-                )
+                Image(painterResource(R.drawable.pinky_happy), null, Modifier.size(45.dp))
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = if (item.battery >= 80) R.drawable.bateria_verde else R.drawable.bateria_amarilla),
-                    contentDescription = null,
-                    modifier = Modifier.size(60.dp)
-                )
+                Image(painterResource(if (item.battery >= 80) R.drawable.bateria_verde else R.drawable.bateria_amarilla), null, Modifier.size(60.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "Nivel de batería: ${item.battery}%", fontSize = 15.sp, color = Color.Black)
+                Text("Nivel de batería: ${item.battery}%", fontSize = 15.sp)
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = item.trafficLightColor),
-                    contentDescription = null,
-                    modifier = Modifier.size(50.dp)
-                )
+                Image(painterResource(item.trafficLightColor), null, Modifier.size(50.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "Semáforo: ${item.trafficLightName}", fontSize = 15.sp, color = Color.Black)
+                Text("Semáforo: ${item.trafficLightName}", fontSize = 15.sp)
             }
-
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomEnd) {
-                Button(
-                    onClick = onVerMas,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0D0E0)),
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 0.dp),
-                    modifier = Modifier.height(32.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(text = "Ver más...", color = Color.Black, fontSize = 12.sp)
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomEnd) {
+                Button(onClick = onVerMas, colors = ButtonDefaults.buttonColors(Color(0xFFF0D0E0)), shape = RoundedCornerShape(16.dp)) {
+                    Text("Ver más...", color = Color.Black, fontSize = 12.sp)
                 }
             }
         }
@@ -148,71 +98,18 @@ fun HistoryCard(item: HistoryItem, onVerMas: () -> Unit) {
 
 @Composable
 fun HistoryDetailDialog(item: HistoryItem, onDismiss: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.4f))
-            .clickable { onDismiss() },
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .clickable(enabled = false) {},
-            shape = RoundedCornerShape(32.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(text = item.displayDate, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        DetailText(label = "Estado de ánimo", value = item.mood)
-                        DetailText(label = "Horas dormidas", value = "${item.hoursSlept.toInt()} horas")
-                        DetailText(label = "Concentración", value = item.concentration)
-                        DetailText(label = "Memoria", value = item.memory)
-                    }
-                    Image(
-                        painter = painterResource(id = R.drawable.pinky_happy),
-                        contentDescription = null,
-                        modifier = Modifier.size(60.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = if (item.battery >= 80) R.drawable.bateria_verde else R.drawable.bateria_amarilla),
-                        contentDescription = null,
-                        modifier = Modifier.size(60.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = "${item.battery}%", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    
-                    Spacer(modifier = Modifier.weight(1f))
-                    
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0D0E0)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(text = "Cerrar", color = Color.Black)
-                    }
-                }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } },
+        title = { Text(item.displayDate, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text("• Estado: ${item.mood}")
+                Text("• Sueño: ${item.hoursSlept.toInt()} horas")
+                Text("• Concentración: ${item.concentration}")
+                Text("• Memoria: ${item.memory}")
+                Text("• Batería: ${item.battery}%")
             }
         }
-    }
-}
-
-@Composable
-fun DetailText(label: String, value: String) {
-    Text(
-        text = "• $label: $value",
-        fontSize = 14.sp,
-        color = Color.Black,
-        modifier = Modifier.padding(vertical = 2.dp)
     )
 }

@@ -8,7 +8,6 @@ import com.example.mindstack.data.network.LoginRequest
 import com.example.mindstack.data.network.RegisterRequest
 import kotlinx.coroutines.launch
 
-// MODELO DE USUARIO COMPLETO
 data class User(
     val id: Int,
     val name: String,
@@ -21,84 +20,49 @@ data class User(
 class AuthViewModel : ViewModel() {
     var token by mutableStateOf("")
     var currentUser by mutableStateOf<User?>(null)
-    var loginSuccess by mutableStateOf(false) // REINSTALADO
+    var loginSuccess by mutableStateOf(false)
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 
     fun login(email: String, pass: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
-            errorMessage = null
             try {
                 val response = RetrofitClient.authService.login(LoginRequest(email, pass))
                 if (response.isSuccessful) {
                     val body = response.body()
                     token = body?.token ?: ""
-                    if (token.isNotEmpty()) {
-                        // Mapeo completo para que SettingsView y History no truenen
-                        currentUser = User(
-                            id = body?.userId ?: 0,
-                            name = body?.name ?: "",
-                            email = email
-                        )
-                        loginSuccess = true
-                        onSuccess()
-                    }
-                } else {
-                    errorMessage = "Credenciales incorrectas"
+                    currentUser = User(
+                        id = body?.userId ?: 0,
+                        name = body?.name ?: "",
+                        lastName = body?.lastName ?: "",
+                        email = email,
+                        dateOfBirth = body?.dateOfBirth ?: "",
+                        idealSleepHours = body?.idealSleepHours?.toFloat() ?: 8.0f
+                    )
+                    loginSuccess = true
+                    onSuccess()
                 }
-            } catch (e: Exception) {
-                errorMessage = e.message
-            } finally {
-                isLoading = false
-            }
+            } catch (e: Exception) { errorMessage = e.message } finally { isLoading = false }
         }
     }
 
-    fun registerUser(
-        name: String,
-        lastName: String,
-        email: String,
-        pass: String,
-        dob: String,
-        gender: String,
-        onSuccess: () -> Unit
-    ) {
+    fun registerUser(name: String, lastName: String, email: String, pass: String, dob: String, gender: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
-            errorMessage = null
             try {
-                val response = RetrofitClient.authService.register(
-                    RegisterRequest(
-                        name = name,
-                        lastName = lastName,
-                        email = email,
-                        password = pass,
-                        dateOfBirth = dob,
-                        gender = gender,
-                        idealSleepHours = 8.0
-                    )
-                )
+                val response = RetrofitClient.authService.register(RegisterRequest(name, lastName, email, pass, dob, gender, 8.0))
                 if (response.isSuccessful) {
                     token = response.body()?.token ?: ""
-                    loginSuccess = true // Para que el NavManager sepa que ya entró
+                    currentUser = User(id = response.body()?.userId ?: 0, name = name, lastName = lastName, email = email, dateOfBirth = dob)
+                    loginSuccess = true
                     onSuccess()
-                } else {
-                    errorMessage = "Error: ${response.code()}"
                 }
-            } catch (e: Exception) {
-                errorMessage = e.message
-            } finally {
-                isLoading = false
-            }
+            } catch (e: Exception) { errorMessage = e.message } finally { isLoading = false }
         }
     }
 
-    // MÉTODO LOGOUT REINSTALADO
     fun logout(onSuccess: () -> Unit) {
-        token = ""
-        currentUser = null
-        loginSuccess = false
-        onSuccess()
+        token = ""; currentUser = null; loginSuccess = false; onSuccess()
     }
 }

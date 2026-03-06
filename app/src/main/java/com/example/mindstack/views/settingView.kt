@@ -2,13 +2,12 @@ package com.example.mindstack.views
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
@@ -28,45 +27,24 @@ import com.example.mindstack.ui.AuthViewModel
 @Composable
 fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
     val user = authViewModel.currentUser
-    var isEditing by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
 
+    // Estado para controlar el movimiento del dedo
+    val scrollState = rememberScrollState()
+
     if (user == null) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("No se ha iniciado sesión")
-            Button(onClick = { navController.navigate("login_view") }) {
-                Text("Ir al Login")
-            }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Sesión no iniciada", color = Color.Gray)
         }
         return
     }
 
-    var name by remember { mutableStateOf("${user.name} ${user.lastName}") }
-    var email by remember { mutableStateOf(user.email) }
-    var dob by remember { mutableStateOf(user.dateOfBirth) }
-
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
-            title = { Text(text = "Acerca de la App", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    text = "Esta aplicación no reemplaza un diagnóstico médico profesional. " +
-                            "Simplemente sirve como sugerencias para ayudarle a regular su sueño.",
-                    fontSize = 16.sp
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) {
-                    Text("Entendido", color = Color(0xFFA294E3))
-                }
-            },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = Color.White
+            title = { Text("Información", fontWeight = FontWeight.Bold) },
+            text = { Text("MindStack ayuda a regular tu sueño, pero no reemplaza un diagnóstico médico.") },
+            confirmButton = { TextButton(onClick = { showAboutDialog = false }) { Text("Cerrar") } }
         )
     }
 
@@ -75,87 +53,80 @@ fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
             .fillMaxSize()
             .background(Color(0xFFA294E3))
     ) {
+        // 1. CABECERA (Fija arriba)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 48.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 40.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Perfil",
-                fontSize = 32.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-
+            Text("Perfil", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Row {
                 IconButton(onClick = { showAboutDialog = true }) {
-                    Icon(imageVector = Icons.Default.Info, contentDescription = "Acerca de", tint = Color.Black)
+                    Icon(Icons.Default.Info, null, tint = Color.Black)
                 }
-
                 IconButton(onClick = {
-                    // CORRECCIÓN: Se añade el bloque onSuccess exigido por el ViewModel
-                    authViewModel.logout(onSuccess = {
-                        navController.navigate("welcome") {
-                            popUpTo(0)
-                        }
-                    })
+                    authViewModel.logout { navController.navigate("welcome") { popUpTo(0) } }
                 }) {
-                    Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = Color.Black)
+                    Icon(Icons.Default.ExitToApp, null, tint = Color.Black)
                 }
             }
         }
 
+        // 2. CONTENEDOR BLANCO SCROLLEABLE
+        // Usamos weight(1f) para que el scroll ocupe el resto de la pantalla sin cortarse
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
+                .background(Color(0xFFF5F5F5))
+                .verticalScroll(scrollState)
+                .padding(horizontal = 32.dp)
         ) {
-            Box(contentAlignment = Alignment.BottomEnd) {
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Avatar y Nombre
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Box(
-                    modifier = Modifier.size(150.dp).clip(CircleShape).background(Color.White),
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.pinky_happy),
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier.size(100.dp)
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .clickable { isEditing = !isEditing }
-                        .padding(8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isEditing) Icons.Default.Check else Icons.Default.Edit,
                         contentDescription = null,
-                        tint = Color.Gray
+                        modifier = Modifier.size(90.dp)
                     )
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "${user.name} ${user.lastName}",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
             }
 
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Datos del Usuario
+            ProfileDataField(label = "Nombre Completo:", value = "${user.name} ${user.lastName}")
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = name, color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.Medium)
-        }
+            ProfileDataField(label = "Correo Electrónico:", value = user.email)
+            Spacer(modifier = Modifier.height(16.dp))
+            ProfileDataField(label = "Fecha de Nacimiento:", value = user.dateOfBirth)
+            Spacer(modifier = Modifier.height(16.dp))
+            ProfileDataField(label = "Objetivo de Sueño:", value = "${user.idealSleepHours} horas")
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
-                .background(Color(0xFFF5F5F5))
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            ProfileDataField(label = "Nombre completo:", value = name)
-            ProfileDataField(label = "Correo electrónico:", value = email)
-            ProfileDataField(label = "Fecha de nacimiento:", value = dob)
-            ProfileDataField(label = "Horas de sueño ideales:", value = "${user.idealSleepHours} hrs")
+            // ESPACIADO FINAL CRÍTICO: Para que el scroll te deje ver el último campo
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -163,17 +134,24 @@ fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
 @Composable
 fun ProfileDataField(label: String, value: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = label, fontSize = 14.sp, color = Color.Gray, modifier = Modifier.padding(start = 8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(Color.White)
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.CenterStart
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+        )
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            shadowElevation = 2.dp
         ) {
-            Text(text = value, fontSize = 16.sp, color = Color.Black)
+            Box(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(text = value, fontSize = 16.sp, color = Color.Black)
+            }
         }
     }
 }
