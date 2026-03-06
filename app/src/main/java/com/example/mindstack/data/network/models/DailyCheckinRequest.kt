@@ -4,7 +4,6 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface CheckinApiService {
-    // Agregamos el prefijo api/v1 para probar la conexión
     @POST("api/v1/checkin")
     suspend fun submitCheckin(
         @Header("Authorization") token: String,

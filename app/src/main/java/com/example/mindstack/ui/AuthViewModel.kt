@@ -1,85 +1,63 @@
 package com.example.mindstack.ui
 
-import android.app.Application
-import android.content.Context
 import androidx.compose.runtime.*
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mindstack.data.AppDatabase
 import com.example.mindstack.data.RetrofitClient
-import com.example.mindstack.data.entities.User
 import com.example.mindstack.data.network.LoginRequest
 import com.example.mindstack.data.network.RegisterRequest
 import kotlinx.coroutines.launch
 
-class AuthViewModel(application: Application) : AndroidViewModel(application) {
-    private val db = AppDatabase.getDatabase(application)
-    private val mindStackDao = db.mindStackDao()
-    private val sharedPreferences = application.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+data class User(
+    val id: Int,
+    val name: String,
+    val lastName: String = "",
+    val email: String,
+    val dateOfBirth: String = "",
+    val idealSleepHours: Float = 8.0f
+)
 
+class AuthViewModel : ViewModel() {
+    var token by mutableStateOf("")
     var currentUser by mutableStateOf<User?>(null)
-    var errorMessage by mutableStateOf<String?>(null) // Público para LoginView/RegisterView
-    var isLoading by mutableStateOf(false)           // Público para LoginView/RegisterView
     var loginSuccess by mutableStateOf(false)
-    var token by mutableStateOf(sharedPreferences.getString("auth_token", "") ?: "")
+    var isLoading by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
 
-    init { checkSession() }
-
-    private fun checkSession() {
-        val email = sharedPreferences.getString("user_email", null)
-        if (email != null) {
-            viewModelScope.launch {
-                currentUser = mindStackDao.getUserByEmail(email)
-                if (currentUser != null) loginSuccess = true
-            }
-        }
-    }
-
-    fun login(email: String, pass: String) {
+    fun login(email: String, pass: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             try {
                 val response = RetrofitClient.authService.login(LoginRequest(email, pass))
-                if (response.isSuccessful && response.body() != null) {
-                    val authData = response.body()!!
-                    val user = User(id = authData.userId, name = authData.name, email = email, password = pass, lastName = "", dateOfBirth = "", gender = "", idRol = 1, idealSleepHours = 8f)
-                    mindStackDao.insertUser(user)
-                    token = authData.token
-                    sharedPreferences.edit().putString("user_email", email).putString("auth_token", token).apply()
-                    currentUser = user
-                    loginSuccess = true
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    token = body?.token ?: ""
+                    if (token.isNotEmpty()) {
+                        currentUser = User(id = body?.userId ?: 0, name = body?.name ?: "", email = email)
+                        loginSuccess = true
+                        onSuccess()
+                    }
                 } else { errorMessage = "Credenciales incorrectas" }
-            } catch (e: Exception) { errorMessage = "Error de red o Timeout" }
-            finally { isLoading = false }
+            } catch (e: Exception) { errorMessage = e.message } finally { isLoading = false }
         }
     }
 
-    fun registerUser(name: String, lastName: String, email: String, pass: String, dob: String, gender: String, idealSleep: Double) {
+    // ESTA ES LA QUE PIDE REGISTERVIEW
+    fun registerUser(name: String, lastName: String, email: String, pass: String, dob: String, gender: String, hours: Double, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
-            errorMessage = null
             try {
-                val request = RegisterRequest(name, lastName, email, pass, dob, gender, idealSleep)
-                val response = RetrofitClient.authService.register(request)
-                if (response.isSuccessful && response.body() != null) {
-                    val authData = response.body()!!
-                    val user = User(id = authData.userId, name = name, email = email, password = pass, lastName = lastName, dateOfBirth = dob, gender = gender, idRol = 1, idealSleepHours = idealSleep.toFloat())
-                    mindStackDao.insertUser(user)
-                    token = authData.token
-                    sharedPreferences.edit().putString("user_email", email).putString("auth_token", token).apply()
-                    currentUser = user
+                val response = RetrofitClient.authService.register(RegisterRequest(name, lastName, email, pass, dob, gender, hours))
+                if (response.isSuccessful) {
                     loginSuccess = true
+                    onSuccess()
                 }
-            } catch (e: Exception) { errorMessage = e.message }
-            finally { isLoading = false }
+            } catch (e: Exception) { errorMessage = e.message } finally { isLoading = false }
         }
     }
 
-    fun logout() {
-        currentUser = null
-        loginSuccess = false
-        token = ""
-        sharedPreferences.edit().clear().apply()
+    fun logout(onSuccess: () -> Unit) {
+        token = ""; currentUser = null; loginSuccess = false; onSuccess()
     }
 }

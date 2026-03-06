@@ -1,5 +1,6 @@
 package com.example.mindstack.views
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -25,6 +27,7 @@ import com.example.mindstack.ui.AuthViewModel
 fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     // Observar el éxito del login para navegar al Home
     LaunchedEffect(authViewModel.loginSuccess) {
@@ -82,7 +85,6 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
                 .padding(horizontal = 40.dp, vertical = 50.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Mostrar mensaje de error si existe en el ViewModel
             authViewModel.errorMessage?.let { error ->
                 Text(
                     text = error,
@@ -129,18 +131,20 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
 
             Spacer(modifier = Modifier.height(50.dp))
 
-            // Cambiar botón por indicador de carga si está procesando
             if (authViewModel.isLoading) {
                 CircularProgressIndicator(
                     color = Color(0xFF4A80B4),
                     modifier = Modifier.size(50.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Conectando con el servidor...", fontSize = 12.sp, color = Color.Gray)
             } else {
                 Button(
                     onClick = {
-                        authViewModel.login(email, password)
+                        // CORRECCIÓN: Se añade el bloque onSuccess exigido por el ViewModel
+                        authViewModel.login(email, password, onSuccess = {
+                            navController.navigate("main_view") {
+                                popUpTo("login_view") { inclusive = true }
+                            }
+                        })
                     },
                     modifier = Modifier
                         .width(220.dp)

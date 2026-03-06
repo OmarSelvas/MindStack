@@ -5,8 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -28,8 +26,9 @@ import androidx.navigation.NavController
 import com.example.mindstack.R
 import com.example.mindstack.ui.AuthViewModel
 import com.example.mindstack.ui.CheckInViewModel
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 
-// 1. LA LISTA DEBE ESTAR DISPONIBLE (Asegúrate de que los R.drawable existan)
+// Datos de los estados de ánimo
 data class MoodItem(val name: String, val color: Color, val imageRes: Int)
 
 val listaMoods = listOf(
@@ -46,9 +45,9 @@ fun MoodView(
     authViewModel: AuthViewModel,
     checkInViewModel: CheckInViewModel
 ) {
-    // Sincronización con el ID del ViewModel
+    // Sincronización con el ViewModel (ID 1-5 mapeado a Index 0-4)
     var selectedMoodIndex by remember {
-        mutableIntStateOf(checkInViewModel.selectedMoodId?.let { it - 1 } ?: 2)
+        mutableIntStateOf((checkInViewModel.selectedMoodId ?: 3) - 1)
     }
     val currentMood = listaMoods[selectedMoodIndex]
     val context = LocalContext.current
@@ -71,14 +70,13 @@ fun MoodView(
             Image(
                 painter = painterResource(id = currentMood.imageRes),
                 contentDescription = null,
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier.size(180.dp)
             )
 
             Spacer(modifier = Modifier.weight(0.5f))
 
             Text("▼", fontSize = 24.sp, color = Color(0xFF3E2723))
 
-            // Ruleta
             Box(
                 modifier = Modifier.fillMaxWidth().height(180.dp),
                 contentAlignment = Alignment.BottomCenter
@@ -93,6 +91,7 @@ fun MoodView(
 
             Button(
                 onClick = {
+                    // LLAMADA CLAVE: Sincroniza con la función que agregamos al ViewModel
                     checkInViewModel.updateMood(selectedMoodIndex + 1)
                     Toast.makeText(context, "Estado de ánimo guardado", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
@@ -120,16 +119,13 @@ fun MoodWheelCircularInfinita(selectedIndex: Int, onMoodChange: (Int) -> Unit) {
         label = "wheelRotation"
     )
 
-    // CORRECCIÓN: El acumulador debe estar fuera del pointerInput para persistir
     var dragAmountAccumulated by remember { mutableFloatStateOf(0f) }
-
-
 
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
             .height(180.dp)
-            .pointerInput(selectedIndex) { // Se reinicia cuando cambia el índice para consistencia
+            .pointerInput(selectedIndex) {
                 detectHorizontalDragGestures(
                     onDragEnd = { dragAmountAccumulated = 0f },
                     onHorizontalDrag = { change, dragAmount ->
@@ -168,11 +164,5 @@ fun MoodWheelCircularInfinita(selectedIndex: Int, onMoodChange: (Int) -> Unit) {
                 )
             }
         }
-
-        drawCircle(
-            color = Color(0xFF3E2723),
-            radius = 10.dp.toPx(),
-            center = Offset(canvasWidth / 2f, canvasHeight * 0.8f)
-        )
     }
 }

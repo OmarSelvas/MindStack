@@ -10,7 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Info // Importado para el botón "Acerca de"
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,8 +29,6 @@ import com.example.mindstack.ui.AuthViewModel
 fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
     val user = authViewModel.currentUser
     var isEditing by remember { mutableStateOf(false) }
-
-    // --- ESTADO PARA EL MODAL ---
     var showAboutDialog by remember { mutableStateOf(false) }
 
     if (user == null) {
@@ -51,7 +49,6 @@ fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
     var email by remember { mutableStateOf(user.email) }
     var dob by remember { mutableStateOf(user.dateOfBirth) }
 
-    // --- LÓGICA DEL MODAL EMERGENTE ---
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
@@ -90,22 +87,18 @@ fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
                 fontWeight = FontWeight.Bold
             )
 
-            // FILA DE BOTONES DE ACCIÓN
             Row {
-                // NUEVO BOTÓN "ACERCA DE"
                 IconButton(onClick = { showAboutDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "Acerca de",
-                        tint = Color.Black
-                    )
+                    Icon(imageVector = Icons.Default.Info, contentDescription = "Acerca de", tint = Color.Black)
                 }
 
                 IconButton(onClick = {
-                    authViewModel.logout()
-                    navController.navigate("welcome") {
-                        popUpTo(0)
-                    }
+                    // CORRECCIÓN: Se añade el bloque onSuccess exigido por el ViewModel
+                    authViewModel.logout(onSuccess = {
+                        navController.navigate("welcome") {
+                            popUpTo(0)
+                        }
+                    })
                 }) {
                     Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = Color.Black)
                 }
@@ -118,10 +111,7 @@ fun SettingView(navController: NavController, authViewModel: AuthViewModel) {
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
+                    modifier = Modifier.size(150.dp).clip(CircleShape).background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(

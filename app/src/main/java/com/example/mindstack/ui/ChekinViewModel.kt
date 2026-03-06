@@ -1,52 +1,55 @@
 package com.example.mindstack.ui
 
-import android.app.Application
+import android.util.Log
 import androidx.compose.runtime.*
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mindstack.data.RetrofitClient
 import com.example.mindstack.data.network.DailyCheckinRequest
 import kotlinx.coroutines.launch
 
-class CheckInViewModel(application: Application) : AndroidViewModel(application) {
+class CheckInViewModel : ViewModel() {
+    var savedSleepStart by mutableStateOf<String?>(null)
+    var selectedMoodId by mutableStateOf<Int?>(null)
     var isLoading by mutableStateOf(false)
     var checkInSuccess by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 
-    // VARIABLES PÚBLICAS PARA LAS VISTAS
-    var selectedMoodId by mutableStateOf<Int?>(null)
-    var savedSleepStart by mutableStateOf<String?>(null)
+    fun updateMood(id: Int) { selectedMoodId = id }
 
-    fun updateMood(id: Int) {
-        selectedMoodId = id
-    }
-
-    // Firma de función sincronizada con MainView
-    fun submitDailyCheckIn(isMorning: Boolean, currentTime: String, authViewModel: AuthViewModel, mood: Int) {
-        val token = authViewModel.token
-        if (token.isEmpty()) {
-            errorMessage = "No hay sesión activa"
-            return
-        }
-
+    fun submitDailyCheckIn(isMorning: Boolean, currentTime: String, token: String, mood: Int) {
         viewModelScope.launch {
             isLoading = true
+            errorMessage = null
+
+            // LOG DE COMBATE: Para ver si el botón sirve
+            Log.d("MINDSTACK_URGENTE", "Botón presionado. Token: ${token.take(10)}... Mood: $mood")
+
             try {
+                // FORZAMOS EL OBJETO (Si no hay hora de inicio, ponemos una por defecto para que no truene)
                 val request = DailyCheckinRequest(
-                    sleepStart = if (isMorning) (savedSleepStart ?: "00:00") else currentTime,
-                    sleepEnd = if (isMorning) currentTime else "00:00",
+                    sleepStart = savedSleepStart ?: "23:00",
+                    sleepEnd = currentTime,
                     moodScore = mood
                 )
-                // Usando la ruta api/v1 que acordamos
-                val response = RetrofitClient.checkinService.submitCheckin("Bearer $token", request)
+
+                val bearerToken = if (token.startsWith("Bearer ")) token else "Bearer $token"
+
+                Log.d("MINDSTACK_URGENTE", "DISPARANDO PETICIÓN A RENDER...")
+                val response = RetrofitClient.checkinService.submitCheckin(bearerToken, request)
+
                 if (response.isSuccessful) {
+                    Log.d("MINDSTACK_URGENTE", "¡AL FIN! Render respondió: ${response.body()?.message}")
                     checkInSuccess = true
-                    if (isMorning) savedSleepStart = null
+                    savedSleepStart = null
                 } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("MINDSTACK_URGENTE", "SERVIDOR RECHAZÓ: ${response.code()} - $errorBody")
                     errorMessage = "Error ${response.code()}"
                 }
             } catch (e: Exception) {
-                errorMessage = "Error de red"
+                Log.e("MINDSTACK_URGENTE", "ERROR DE RED (¿INTERNET?): ${e.message}")
+                errorMessage = "Fallo de conexión"
             } finally {
                 isLoading = false
             }

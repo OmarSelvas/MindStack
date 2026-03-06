@@ -32,7 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.ui.AuthViewModel
-import com.example.mindstack.ui.CheckInViewModel // IMPORTANTE
+import com.example.mindstack.ui.CheckInViewModel
 import com.example.mindstack.views.*
 import com.example.mindstack.viewmodels.NeuroReflejoViewModel
 import com.example.mindstack.viewmodels.MemoryViewModel
@@ -46,12 +46,11 @@ fun NavManager() {
 
     // Inicialización de ViewModels
     val authViewModel: AuthViewModel = viewModel()
-    val checkInViewModel: CheckInViewModel = viewModel() // NUEVO: ViewModel compartido para Check-in
+    val checkInViewModel: CheckInViewModel = viewModel()
     val neuroReflejoViewModel: NeuroReflejoViewModel = viewModel()
     val memoryViewModel: MemoryViewModel = viewModel()
     val historyViewModel: HistoryViewModel = viewModel()
 
-    // Lógica de redirección automática si ya inició sesión
     LaunchedEffect(authViewModel.loginSuccess) {
         if (authViewModel.loginSuccess && (currentRoute == "welcome" || currentRoute == "login_view" || currentRoute == "register_view")) {
             navController.navigate("main_view") {
@@ -71,12 +70,9 @@ fun NavManager() {
         Box(modifier = Modifier.padding(innerPadding)) {
             NavHost(navController = navController, startDestination = "welcome") {
                 composable("welcome") { WelcomeView(navController) }
-
-                // Vistas de Autenticación
                 composable("login_view") { LoginView(navController, authViewModel) }
                 composable("register_view") { RegisterView(navController, authViewModel) }
 
-                // Vistas de Check-in (Aquí pasamos el CheckInViewModel compartido)
                 composable("main_view") {
                     MainView(navController, authViewModel, checkInViewModel)
                 }
@@ -84,11 +80,27 @@ fun NavManager() {
                     MoodView(navController, authViewModel, checkInViewModel)
                 }
 
-                // Otras Vistas
                 composable("profile") { SettingView(navController, authViewModel) }
                 composable("list") { GamesView(navController) }
-                composable("neuro_reflejo") { NeuroReflejoView(navController, authViewModel, neuroReflejoViewModel) }
-                composable("memory_game") { MemoryGameView(navController, memoryViewModel) }
+
+                // CORRECCIÓN AQUÍ: Se agregaron los 4 parámetros en el orden correcto
+                composable("neuro_reflejo") {
+                    NeuroReflejoView(
+                        navController = navController,
+                        authViewModel = authViewModel,
+                        checkInViewModel = checkInViewModel, // Faltaba este
+                        viewModel = neuroReflejoViewModel
+                    )
+                }
+
+                composable("memory_game") {
+                    MemoryGameView(
+                        navController = navController,
+                        authViewModel = authViewModel,
+                        viewModel = memoryViewModel
+                    )
+                }
+
                 composable("history") { HistoryView(authViewModel, historyViewModel) }
             }
         }
@@ -98,9 +110,7 @@ fun NavManager() {
 @Composable
 fun CustomBottomBar(navController: NavController, currentRoute: String?) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 24.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -127,10 +137,6 @@ fun NavBarItem(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
             .clip(RoundedCornerShape(12.dp))
             .background(if (isSelected) Color(0xFFD0E0F0) else Color.Transparent)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color.Black
-        )
+        Icon(imageVector = icon, contentDescription = null, tint = Color.Black)
     }
 }

@@ -26,6 +26,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var gender by remember { mutableStateOf("M") }
     var idealSleep by remember { mutableStateOf("8.0") }
 
+    // El LaunchedEffect se mantiene para reaccionar al estado global
     LaunchedEffect(authViewModel.loginSuccess) {
         if (authViewModel.loginSuccess) {
             navController.navigate("main") {
@@ -46,19 +47,21 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Campos de texto (Resumidos para brevedad, asumiendo que tienes tus OutlinedTextFields)
         OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text("Apellido") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Correo") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Contraseña") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = dob, onValueChange = { dob = it }, label = { Text("Fecha Nacimiento (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = idealSleep, onValueChange = { idealSleep = it }, label = { Text("Horas de sueño ideales") }, modifier = Modifier.fillMaxWidth())
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
-        // CORRECCIÓN: Usar variables públicas del ViewModel
         if (authViewModel.isLoading) {
             CircularProgressIndicator(color = Color(0xFF5589B7))
         } else {
             Button(
                 onClick = {
+                    // CORRECCIÓN: Nombres de parámetros alineados con el ViewModel y agregado onSuccess
                     authViewModel.registerUser(
                         name = name,
                         lastName = lastName,
@@ -66,7 +69,12 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                         pass = password,
                         dob = dob,
                         gender = gender,
-                        idealSleep = idealSleep.toDoubleOrNull() ?: 8.0
+                        hours = idealSleep.toDoubleOrNull() ?: 8.0,
+                        onSuccess = {
+                            navController.navigate("main") {
+                                popUpTo("register") { inclusive = true }
+                            }
+                        }
                     )
                 },
                 modifier = Modifier.fillMaxWidth().height(55.dp),
@@ -77,9 +85,8 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             }
         }
 
-        // CORRECCIÓN: Mostrar error si existe
         authViewModel.errorMessage?.let { msg ->
-            Text(text = msg, color = Color.Red, modifier = Modifier.padding(top = 10.dp))
+            Text(text = msg, color = Color.Red, modifier = Modifier.padding(top = 10.dp), fontWeight = FontWeight.Bold)
         }
     }
 }
