@@ -32,11 +32,6 @@ interface CheckinApiService {
 
     @GET("api/v1/dashboard")
     suspend fun getDashboard(@Header("Authorization") token: String): Response<DashboardResponse>
-
-    @GET("api/v1/checkin/battery")
-    suspend fun getCombinedBattery(
-        @Header("Authorization") token: String
-    ): Response<CombinedBatteryResponse>
 }
 
 interface DashboardApiService {
@@ -46,10 +41,22 @@ interface DashboardApiService {
 
 interface GameApiService {
     @POST("api/v1/games/memory")
-    suspend fun submitMemoryGame(@Header("Authorization") token: String, @Body request: MemoryGameRequest): Response<MemoryGameResponse>
+    suspend fun submitMemoryGame(
+        @Header("Authorization") token: String, 
+        @Body request: MemoryGameRequest
+    ): Response<MemoryGameResponse>
 
     @POST("api/v1/games/neuro-reflex")
-    suspend fun submitNeuroReflex(@Header("Authorization") token: String, @Body request: NeuroReflexRequest): Response<NeuroReflexResponse>
+    suspend fun submitNeuroReflex(
+        @Header("Authorization") token: String, 
+        @Body request: NeuroReflexRequest
+    ): Response<NeuroReflexResponse>
+
+    @GET("api/v1/games/battery/{checkinId}")
+    suspend fun getCombinedBattery(
+        @Header("Authorization") token: String,
+        @Path("checkinId") checkinId: Int
+    ): Response<CombinedBatteryResponse>
 }
 
 // --- CLIENTE CENTRALIZADO ---

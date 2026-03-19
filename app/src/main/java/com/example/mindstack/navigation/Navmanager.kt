@@ -35,9 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.ui.AuthViewModel
 import com.example.mindstack.ui.CheckInViewModel
 import com.example.mindstack.views.*
-import com.example.mindstack.viewmodels.NeuroReflejoViewModel
-import com.example.mindstack.viewmodels.MemoryViewModel
-import com.example.mindstack.viewmodels.HistoryViewModel
+import com.example.mindstack.viewmodels.*
 
 @Composable
 fun NavManager() {
@@ -47,6 +45,7 @@ fun NavManager() {
 
     val authViewModel: AuthViewModel = viewModel()
     val checkInViewModel: CheckInViewModel = viewModel()
+    val mainViewModel: MainViewModel = viewModel()
     val neuroReflejoViewModel: NeuroReflejoViewModel = viewModel()
     val memoryViewModel: MemoryViewModel = viewModel()
     val historyViewModel: HistoryViewModel = viewModel()
@@ -77,7 +76,7 @@ fun NavManager() {
                 composable("register_view") { RegisterView(navController, authViewModel) }
 
                 composable("main_view") {
-                    MainView(navController, authViewModel, checkInViewModel)
+                    MainView(navController, authViewModel, checkInViewModel, mainViewModel)
                 }
                 composable("mood") {
                     MoodView(navController, authViewModel, checkInViewModel)
@@ -90,7 +89,7 @@ fun NavManager() {
                     NeuroReflejoView(
                         navController = navController,
                         authViewModel = authViewModel,
-                        checkInViewModel = checkInViewModel,
+                        mainViewModel = mainViewModel,
                         viewModel = neuroReflejoViewModel
                     )
                 }
@@ -99,6 +98,7 @@ fun NavManager() {
                     MemoryGameView(
                         navController = navController,
                         authViewModel = authViewModel,
+                        mainViewModel = mainViewModel,
                         viewModel = memoryViewModel
                     )
                 }

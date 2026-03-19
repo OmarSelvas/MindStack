@@ -57,12 +57,12 @@ data class CombinedBatteryResponse(
     val semaphoreColor: String,
     val cognitiveSemaphore: String,
     val globalRecommendation: String,
-    val personalizedMessage: PersonalizedMessage
+    val personalizedMessage: PersonalizedMessage? = null
 )
 
 data class PersonalizedMessage(
     val title: String,
-    val content: String
+    val body: String
 )
 
 data class CheckinResponse(val message: String)

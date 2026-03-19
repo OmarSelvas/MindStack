@@ -32,9 +32,9 @@ import java.util.Locale
 fun MainView(
     navController: NavController,
     authViewModel: AuthViewModel,
-    checkInViewModel: CheckInViewModel
+    checkInViewModel: CheckInViewModel,
+    mainViewModel: MainViewModel = viewModel()
 ) {
-    val mainViewModel: MainViewModel = viewModel()
     val context = LocalContext.current
     val data = mainViewModel.dashboardData
     val today = data?.todayCheckin
@@ -115,10 +115,12 @@ fun MainView(
                         mainViewModel.getSemaphoreIcon(today?.semaphore?.color),
                         Modifier.weight(1f)
                     )
+                    
+                    val displayBattery = today?.batteryCog ?: data?.weekBatteryAvg?.toInt() ?: 0
                     CustomStatCard(
                         "Batería:",
-                        if (today != null) "${today.batteryCog}%" else "0%",
-                        mainViewModel.getBatteryIcon(today?.batteryCog ?: 0),
+                        "$displayBattery%",
+                        mainViewModel.getBatteryIcon(displayBattery),
                         Modifier.weight(1f),
                         onClick = { navController.navigate("list") }
                     )
@@ -136,7 +138,7 @@ fun MainView(
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                if (checkInViewModel.isLoading) {
+                if (mainViewModel.isLoading || checkInViewModel.isLoading) {
                     CircularProgressIndicator(color = Color(0xFF5589B7))
                 } else {
                     Button(

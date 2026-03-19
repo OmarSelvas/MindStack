@@ -24,20 +24,55 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     var token by mutableStateOf(prefs.getString("token", "") ?: "")
     var currentUser by mutableStateOf<User?>(null)
-    var loginSuccess by mutableStateOf(token.isNotEmpty())
+    var loginSuccess by mutableStateOf(false)
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 
     init {
-        // Si hay token, podríamos intentar cargar el perfil o dejarlo así
-        if (token.isNotEmpty()) {
+        restoreSession()
+    }
+
+    private fun restoreSession() {
+        val savedToken = prefs.getString("token", "") ?: ""
+        val userId = prefs.getInt("user_id", 0)
+        
+        if (savedToken.isNotEmpty() && userId != 0) {
+            token = savedToken
+            currentUser = User(
+                id = userId,
+                name = prefs.getString("user_name", "") ?: "",
+                lastName = prefs.getString("user_lastName", "") ?: "",
+                email = prefs.getString("user_email", "") ?: "",
+                dateOfBirth = prefs.getString("user_dob", "") ?: "",
+                idealSleepHours = prefs.getFloat("user_sleep", 8.0f)
+            )
             loginSuccess = true
+        } else {
+            loginSuccess = false
         }
     }
 
-    private fun saveToken(newToken: String) {
+    private fun saveAuthData(newToken: String, user: User) {
         token = newToken
-        prefs.edit().putString("token", newToken).apply()
+        currentUser = user
+        loginSuccess = true
+        prefs.edit().apply {
+            putString("token", newToken)
+            putInt("user_id", user.id)
+            putString("user_name", user.name)
+            putString("user_lastName", user.lastName)
+            putString("user_email", user.email)
+            putString("user_dob", user.dateOfBirth)
+            putFloat("user_sleep", user.idealSleepHours)
+            apply()
+        }
+    }
+
+    private fun clearAuthData() {
+        token = ""
+        currentUser = null
+        loginSuccess = false
+        prefs.edit().clear().apply()
     }
 
     fun login(email: String, pass: String, onSuccess: () -> Unit) {
@@ -48,10 +83,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 val response = RetrofitClient.authService.login(LoginRequest(email, pass))
                 if (response.isSuccessful) {
                     val body = response.body()
-                    val newToken = body?.token ?: ""
-                    saveToken(newToken)
-                    
-                    currentUser = User(
+                    val user = User(
                         id = body?.userId ?: 0,
                         name = body?.name ?: "",
                         lastName = body?.lastName ?: "",
@@ -59,7 +91,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         dateOfBirth = body?.dateOfBirth ?: "",
                         idealSleepHours = body?.idealSleepHours?.toFloat() ?: 8.0f
                     )
-                    loginSuccess = true
+                    saveAuthData(body?.token ?: "", user)
                     onSuccess()
                 } else {
                     errorMessage = "Credenciales incorrectas"
@@ -79,10 +111,15 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val response = RetrofitClient.authService.register(RegisterRequest(name, lastName, email, pass, dob, gender, 8.0))
                 if (response.isSuccessful) {
-                    val newToken = response.body()?.token ?: ""
-                    saveToken(newToken)
-                    currentUser = User(id = response.body()?.userId ?: 0, name = name, lastName = lastName, email = email, dateOfBirth = dob)
-                    loginSuccess = true
+                    val body = response.body()
+                    val user = User(
+                        id = body?.userId ?: 0, 
+                        name = name, 
+                        lastName = lastName, 
+                        email = email, 
+                        dateOfBirth = dob
+                    )
+                    saveAuthData(body?.token ?: "", user)
                     onSuccess()
                 } else {
                     errorMessage = "El correo ya está registrado"
@@ -96,9 +133,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun logout(onSuccess: () -> Unit) {
-        saveToken("")
-        currentUser = null
-        loginSuccess = false
+        clearAuthData()
         onSuccess()
     }
 }

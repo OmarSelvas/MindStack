@@ -14,14 +14,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindstack.ui.AuthViewModel
-import com.example.mindstack.ui.CheckInViewModel
+import com.example.mindstack.viewmodels.MainViewModel
 import com.example.mindstack.viewmodels.NeuroReflejoViewModel
 
 @Composable
 fun NeuroReflejoView(
     navController: NavController,
     authViewModel: AuthViewModel,
-    checkInViewModel: CheckInViewModel, // Recibido correctamente desde NavManager
+    mainViewModel: MainViewModel,
     viewModel: NeuroReflejoViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val isGameRunning = viewModel.isGameRunning
@@ -31,9 +31,9 @@ fun NeuroReflejoView(
     val averageTime = viewModel.averageReactionTime
     val message = viewModel.message
 
-    // Obtenemos el ID del checkin actual
-    // Si tienes una variable en checkInViewModel que guarde el ID del registro de hoy, úsala aquí.
-    val checkinId = 1
+    // Obtenemos el ID del checkin actual desde el dashboard
+    val checkinId = mainViewModel.dashboardData?.todayCheckin?.checkinId 
+                  ?: mainViewModel.dashboardData?.pendingCheckinId ?: 0
 
     Box(
         modifier = Modifier
@@ -41,7 +41,10 @@ fun NeuroReflejoView(
             .background(if (isScreenGreen) Color(0xFF4CAF50) else Color.Black)
             .clickable(enabled = isGameRunning && !viewModel.isSending) {
                 viewModel.onScreenTouch(authViewModel, checkinId) {
-                    // Acción opcional al terminar
+                    // Refrescar dashboard al terminar para ver cambios en batería
+                    if (authViewModel.token.isNotEmpty()) {
+                        mainViewModel.fetchDashboard(authViewModel.token)
+                    }
                 }
             },
         contentAlignment = Alignment.Center

@@ -14,6 +14,7 @@ class MainViewModel : ViewModel() {
         private set
 
     var isError by mutableStateOf(false)
+    var isLoading by mutableStateOf(false)
 
     fun fetchDashboard(token: String) {
         if (token.isEmpty()) {
@@ -21,14 +22,17 @@ class MainViewModel : ViewModel() {
             return
         }
 
+        val bearerToken = if (token.startsWith("Bearer ")) token else "Bearer $token"
+
         viewModelScope.launch {
+            isLoading = true
             isError = false
             try {
                 Log.d("MainViewModel", "Iniciando petición al dashboard...")
-                val response = RetrofitClient.dashboardService.getDashboard("Bearer $token")
+                val response = RetrofitClient.checkinService.getDashboard(bearerToken)
                 if (response.isSuccessful) {
                     dashboardData = response.body()
-                    Log.d("MainViewModel", "Datos recibidos: ${dashboardData?.streak?.currentStreak} días")
+                    Log.d("MainViewModel", "Datos recibidos correctamente")
                 } else {
                     isError = true
                     Log.e("MainViewModel", "Error en respuesta: ${response.code()}")
@@ -36,14 +40,16 @@ class MainViewModel : ViewModel() {
             } catch (e: Exception) {
                 isError = true
                 Log.e("MainViewModel", "Fallo total: ${e.message}")
+            } finally {
+                isLoading = false
             }
         }
     }
 
     fun getSemaphoreIcon(color: String?): Int = when (color?.lowercase()) {
-        "verde" -> R.drawable.semaforo_verde
-        "amarillo" -> R.drawable.semaforo_amarillo
-        "rojo" -> R.drawable.semaforo_rojo
+        "verde", "#4caf50" -> R.drawable.semaforo_verde
+        "amarillo", "#ffeb3b" -> R.drawable.semaforo_amarillo
+        "rojo", "#f44336" -> R.drawable.semaforo_rojo
         else -> R.drawable.semaforo_verde
     }
 
