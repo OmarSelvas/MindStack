@@ -24,6 +24,12 @@ class MemoryViewModel : ViewModel() {
         R.drawable.par_4, R.drawable.par_5, R.drawable.par_6
     )
 
+    fun resetGame() {
+        currentLevel = 1
+        isGameFinished = false
+        startGame()
+    }
+
     fun startGame() {
         val pairsCount = when(currentLevel) {
             1 -> 2
@@ -36,10 +42,12 @@ class MemoryViewModel : ViewModel() {
         flippedCards.clear()
         matchedCards.clear()
         moves = 0
+        isProcessing = false
     }
 
     fun onCardClick(index: Int, authVm: AuthViewModel, checkinId: Int) {
-        if (isProcessing || flippedCards.contains(index) || matchedCards.contains(index)) return
+        if (isProcessing || flippedCards.contains(index) || matchedCards.contains(index) || isGameFinished) return
+        
         flippedCards.add(index)
         if (flippedCards.size == 2) {
             moves++
@@ -50,11 +58,12 @@ class MemoryViewModel : ViewModel() {
 
     private fun checkMatch(authVm: AuthViewModel, checkinId: Int) {
         viewModelScope.launch {
-            delay(800)
+            delay(500) // Reducido el tiempo de espera (era 800)
             if (cards[flippedCards[0]].imageRes == cards[flippedCards[1]].imageRes) {
                 matchedCards.addAll(flippedCards)
                 if (matchedCards.size == cards.size) {
                     if (currentLevel < 3) {
+                        delay(500)
                         currentLevel++
                         startGame()
                     } else {
@@ -70,8 +79,12 @@ class MemoryViewModel : ViewModel() {
 
     fun submitResults(authVm: AuthViewModel, checkinId: Int) {
         viewModelScope.launch {
-            val request = MemoryGameRequest(checkinId, matchedCards.size / 2, 6)
-            RetrofitClient.gameService.submitMemoryGame("Bearer ${authVm.token}", request)
+            try {
+                val request = MemoryGameRequest(checkinId, matchedCards.size / 2, 6)
+                RetrofitClient.gameService.submitMemoryGame("Bearer ${authVm.token}", request)
+            } catch (e: Exception) {
+                // Manejar error de red si es necesario
+            }
         }
     }
 }

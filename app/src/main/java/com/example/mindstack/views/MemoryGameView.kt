@@ -1,5 +1,9 @@
 package com.example.mindstack.views
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -28,55 +33,103 @@ fun MemoryGameView(
     authViewModel: AuthViewModel,
     viewModel: MemoryViewModel
 ) {
-    val checkinId = 1 // Ajustar según tu lógica de checkinId
+    // CORRECCIÓN: Usar el ID de checkin real si está disponible, o uno por defecto
+    val checkinId = 1 
 
+    // Reiniciar el juego al entrar para evitar estados de cuentas anteriores
     LaunchedEffect(Unit) {
-        viewModel.startGame()
+        viewModel.resetGame()
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().background(Color(0xFFD4E3ED)).padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Memorama", fontSize = 32.sp, modifier = Modifier.padding(vertical = 20.dp))
-
-        Text("Movimientos: ${viewModel.moves}", fontSize = 20.sp)
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFD4E3ED))) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            itemsIndexed(viewModel.cards) { index, card ->
-                val isFlipped = viewModel.flippedCards.contains(index) || viewModel.matchedCards.contains(index)
+            Text("Memorama", fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 20.dp))
 
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White)
-                        .clickable { viewModel.onCardClick(index, authViewModel, checkinId) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(
-                            id = if (isFlipped) card.imageRes else R.drawable.carta_tapada
-                        ),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().padding(8.dp)
-                    )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Nivel: ${viewModel.currentLevel} / 3", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Text("Movimientos: ${viewModel.moves}", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(if (viewModel.currentLevel == 1) 2 else 3),
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                itemsIndexed(viewModel.cards) { index, card ->
+                    val isFlipped = viewModel.flippedCards.contains(index) || viewModel.matchedCards.contains(index)
+
+                    Card(
+                        modifier = Modifier
+                            .aspectRatio(1f)
+                            .clickable(enabled = !isFlipped && !viewModel.isProcessing && !viewModel.isGameFinished) { 
+                                viewModel.onCardClick(index, authViewModel, checkinId) 
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Image(
+                                painter = painterResource(
+                                    id = if (isFlipped) card.imageRes else R.drawable.carta_tapada
+                                ),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().padding(12.dp)
+                            )
+                        }
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
         }
 
-        if (viewModel.isGameFinished) {
-            Button(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier.padding(bottom = 40.dp)
+        // VISTA DE VICTORIA
+        AnimatedVisibility(
+            visible = viewModel.isGameFinished,
+            enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.8f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .clickable { /* Bloquear clics al fondo */ },
+                contentAlignment = Alignment.Center
             ) {
-                Text("Finalizar")
+                Card(
+                    modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.pinky_happy),
+                            contentDescription = null,
+                            modifier = Modifier.size(100.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("¡Felicidades!", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("Has completado todos los niveles", fontSize = 16.sp, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(25.dp)
+                        ) {
+                            Text("Finalizar", fontSize = 18.sp)
+                        }
+                    }
+                }
             }
         }
     }

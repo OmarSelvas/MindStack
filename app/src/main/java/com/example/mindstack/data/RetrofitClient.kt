@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import java.util.concurrent.TimeUnit
 
-// --- INTERFACES: Aquí están todas para que los ViewModels las encuentren ---
+// --- INTERFACES: Centralizadas y actualizadas ---
 
 interface AuthApiService {
     @POST("api/v1/auth/register")
@@ -20,10 +20,23 @@ interface AuthApiService {
 
 interface CheckinApiService {
     @POST("api/v1/checkin")
-    suspend fun submitCheckin(@Header("Authorization") token: String, @Body request: DailyCheckinRequest): Response<CheckinResponse>
+    suspend fun submitCheckin(
+        @Header("Authorization") token: String,
+        @Body request: DailyCheckinRequest
+    ): Response<DailyCheckinResponse>
 
     @GET("api/v1/checkin/history")
-    suspend fun getHistory(@Header("Authorization") token: String): Response<List<DailyCheckinResponse>>
+    suspend fun getHistory(
+        @Header("Authorization") token: String
+    ): Response<List<DailyCheckinResponse>>
+
+    @GET("api/v1/dashboard")
+    suspend fun getDashboard(@Header("Authorization") token: String): Response<DashboardResponse>
+
+    @GET("api/v1/checkin/battery")
+    suspend fun getCombinedBattery(
+        @Header("Authorization") token: String
+    ): Response<CombinedBatteryResponse>
 }
 
 interface DashboardApiService {

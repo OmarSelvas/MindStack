@@ -8,7 +8,7 @@ interface CheckinApiService {
     suspend fun submitCheckin(
         @Header("Authorization") token: String,
         @Body request: DailyCheckinRequest
-    ): Response<CheckinResponse>
+    ): Response<DailyCheckinResponse>
 
     @GET("api/v1/checkin/history")
     suspend fun getHistory(
@@ -19,25 +19,50 @@ interface CheckinApiService {
     suspend fun getDashboard(
         @Header("Authorization") token: String
     ): Response<DashboardResponse>
+
+    @GET("api/v1/checkin/battery")
+    suspend fun getCombinedBattery(
+        @Header("Authorization") token: String
+    ): Response<CombinedBatteryResponse>
 }
 
-// Modelos para el POST
 data class DailyCheckinRequest(
     val sleepStart: String,
     val sleepEnd: String,
     val moodScore: Int
 )
 
-// Respuesta estándar del Check-in
 data class DailyCheckinResponse(
     val checkinId: Int,
     val hoursSleep: Double,
     val sleepDebt: Double,
-    val sleepPercent: Double? = 0.0,
-    val batteryCog: Int,
-    val moodScore: Int = 3,
+    val sleepPercent: Double,
+    val moodScore: Int,
     val semaphore: SemaphoreResponse,
-    val message: String
+    val batteryCog: Int,
+    val fatiga: Int,
+    val message: String,
+    val personalizedMessage: PersonalizedMessage? = null
+)
+
+data class SemaphoreResponse(
+    val color: String,
+    val label: String,
+    val recommendation: String
+)
+
+data class CombinedBatteryResponse(
+    val finalBattery: Int,
+    val fatiga: Int,
+    val semaphoreColor: String,
+    val cognitiveSemaphore: String,
+    val globalRecommendation: String,
+    val personalizedMessage: PersonalizedMessage
+)
+
+data class PersonalizedMessage(
+    val title: String,
+    val content: String
 )
 
 data class CheckinResponse(val message: String)

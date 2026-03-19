@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -44,17 +45,19 @@ fun NavManager() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Inicialización de ViewModels
     val authViewModel: AuthViewModel = viewModel()
     val checkInViewModel: CheckInViewModel = viewModel()
     val neuroReflejoViewModel: NeuroReflejoViewModel = viewModel()
     val memoryViewModel: MemoryViewModel = viewModel()
     val historyViewModel: HistoryViewModel = viewModel()
 
+    // Determinamos si el usuario ya está logueado para saltar el login
+    val startDestination = if (authViewModel.loginSuccess) "main_view" else "welcome"
+
     LaunchedEffect(authViewModel.loginSuccess) {
         if (authViewModel.loginSuccess && (currentRoute == "welcome" || currentRoute == "login_view" || currentRoute == "register_view")) {
             navController.navigate("main_view") {
-                popUpTo("welcome") { inclusive = true }
+                popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
             }
         }
     }
@@ -68,7 +71,7 @@ fun NavManager() {
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            NavHost(navController = navController, startDestination = "welcome") {
+            NavHost(navController = navController, startDestination = startDestination) {
                 composable("welcome") { WelcomeView(navController) }
                 composable("login_view") { LoginView(navController, authViewModel) }
                 composable("register_view") { RegisterView(navController, authViewModel) }
@@ -83,12 +86,11 @@ fun NavManager() {
                 composable("profile") { SettingView(navController, authViewModel) }
                 composable("list") { GamesView(navController) }
 
-                // CORRECCIÓN AQUÍ: Se agregaron los 4 parámetros en el orden correcto
                 composable("neuro_reflejo") {
                     NeuroReflejoView(
                         navController = navController,
                         authViewModel = authViewModel,
-                        checkInViewModel = checkInViewModel, // Faltaba este
+                        checkInViewModel = checkInViewModel,
                         viewModel = neuroReflejoViewModel
                     )
                 }
@@ -120,11 +122,33 @@ fun CustomBottomBar(navController: NavController, currentRoute: String?) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list" || currentRoute == "neuro_reflejo" || currentRoute == "memory_game", onClick = { navController.navigate("list") })
-            NavBarItem(Icons.Default.DateRange, currentRoute == "mood", onClick = { navController.navigate("mood") })
-            NavBarItem(Icons.Default.Home, currentRoute == "main_view", onClick = { navController.navigate("main_view") })
-            NavBarItem(Icons.Default.Refresh, currentRoute == "history", onClick = { navController.navigate("history") })
-            NavBarItem(Icons.Default.AccountCircle, currentRoute == "profile", onClick = { navController.navigate("profile") })
+            NavBarItem(Icons.AutoMirrored.Filled.List, currentRoute == "list" || currentRoute == "neuro_reflejo" || currentRoute == "memory_game", onClick = { 
+                navigateSafely(navController, "list", currentRoute)
+            })
+            NavBarItem(Icons.Default.DateRange, currentRoute == "mood", onClick = { 
+                navigateSafely(navController, "mood", currentRoute)
+            })
+            NavBarItem(Icons.Default.Home, currentRoute == "main_view", onClick = { 
+                navigateSafely(navController, "main_view", currentRoute)
+            })
+            NavBarItem(Icons.Default.Refresh, currentRoute == "history", onClick = { 
+                navigateSafely(navController, "history", currentRoute)
+            })
+            NavBarItem(Icons.Default.AccountCircle, currentRoute == "profile", onClick = { 
+                navigateSafely(navController, "profile", currentRoute)
+            })
+        }
+    }
+}
+
+private fun navigateSafely(navController: NavController, route: String, currentRoute: String?) {
+    if (route != currentRoute) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
         }
     }
 }

@@ -14,13 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindstack.ui.AuthViewModel
-// ESTOS SON LOS IMPORTS QUE TE FALTABAN PARA EL CALENDARIO
 import java.util.Calendar
 
 @Composable
@@ -31,17 +32,14 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var password by remember { mutableStateOf("") }
     var dob by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("M") }
+    var localError by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
-
-    // Obtenemos la instancia del calendario
     val calendar = Calendar.getInstance()
 
-    // Configuración del Diálogo de Fecha
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
-            // Formateo manual para asegurar el 0 en meses/días (YYYY-MM-DD)
             val mesFormateado = if (month + 1 < 10) "0${month + 1}" else "${month + 1}"
             val diaFormateado = if (dayOfMonth < 10) "0$dayOfMonth" else "$dayOfMonth"
             dob = "$year-$mesFormateado-$diaFormateado"
@@ -62,13 +60,43 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         Text("Crear Cuenta", fontSize = 32.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(30.dp))
 
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nombre") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
+            )
+        )
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text("Apellidos") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = lastName,
+            onValueChange = { lastName = it },
+            label = { Text("Apellidos") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
+            )
+        )
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            )
+        )
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
@@ -76,8 +104,12 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             onValueChange = { password = it },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth()
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -115,9 +147,16 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         } else {
             Button(
                 onClick = {
-                    authViewModel.registerUser(name, lastName, email, password, dob, gender) {
-                        navController.navigate("main") {
-                            popUpTo("register") { inclusive = true }
+                    if (password.length < 6) {
+                        localError = "La contraseña debe tener al menos 6 caracteres"
+                    } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                        localError = "Email inválido"
+                    } else {
+                        localError = null
+                        authViewModel.registerUser(name, lastName, email, password, dob, gender) {
+                            navController.navigate("main_view") {
+                                popUpTo("register_view") { inclusive = true }
+                            }
                         }
                     }
                 },
@@ -127,7 +166,8 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             }
         }
 
-        authViewModel.errorMessage?.let {
+        val displayError = localError ?: authViewModel.errorMessage
+        displayError?.let {
             Text(it, color = Color.Red, modifier = Modifier.padding(top = 10.dp))
         }
     }

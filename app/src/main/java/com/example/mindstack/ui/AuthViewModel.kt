@@ -1,7 +1,9 @@
 package com.example.mindstack.ui
 
+import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.*
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mindstack.data.RetrofitClient
 import com.example.mindstack.data.network.LoginRequest
@@ -17,21 +19,38 @@ data class User(
     val idealSleepHours: Float = 8.0f
 )
 
-class AuthViewModel : ViewModel() {
-    var token by mutableStateOf("")
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
+    private val prefs = application.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+
+    var token by mutableStateOf(prefs.getString("token", "") ?: "")
     var currentUser by mutableStateOf<User?>(null)
-    var loginSuccess by mutableStateOf(false)
+    var loginSuccess by mutableStateOf(token.isNotEmpty())
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
+
+    init {
+        // Si hay token, podríamos intentar cargar el perfil o dejarlo así
+        if (token.isNotEmpty()) {
+            loginSuccess = true
+        }
+    }
+
+    private fun saveToken(newToken: String) {
+        token = newToken
+        prefs.edit().putString("token", newToken).apply()
+    }
 
     fun login(email: String, pass: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
+            errorMessage = null
             try {
                 val response = RetrofitClient.authService.login(LoginRequest(email, pass))
                 if (response.isSuccessful) {
                     val body = response.body()
-                    token = body?.token ?: ""
+                    val newToken = body?.token ?: ""
+                    saveToken(newToken)
+                    
                     currentUser = User(
                         id = body?.userId ?: 0,
                         name = body?.name ?: "",
@@ -42,27 +61,44 @@ class AuthViewModel : ViewModel() {
                     )
                     loginSuccess = true
                     onSuccess()
+                } else {
+                    errorMessage = "Credenciales incorrectas"
                 }
-            } catch (e: Exception) { errorMessage = e.message } finally { isLoading = false }
+            } catch (e: Exception) { 
+                errorMessage = "Error de conexión" 
+            } finally { 
+                isLoading = false 
+            }
         }
     }
 
     fun registerUser(name: String, lastName: String, email: String, pass: String, dob: String, gender: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
+            errorMessage = null
             try {
                 val response = RetrofitClient.authService.register(RegisterRequest(name, lastName, email, pass, dob, gender, 8.0))
                 if (response.isSuccessful) {
-                    token = response.body()?.token ?: ""
+                    val newToken = response.body()?.token ?: ""
+                    saveToken(newToken)
                     currentUser = User(id = response.body()?.userId ?: 0, name = name, lastName = lastName, email = email, dateOfBirth = dob)
                     loginSuccess = true
                     onSuccess()
+                } else {
+                    errorMessage = "El correo ya está registrado"
                 }
-            } catch (e: Exception) { errorMessage = e.message } finally { isLoading = false }
+            } catch (e: Exception) { 
+                errorMessage = "Error de conexión" 
+            } finally { 
+                isLoading = false 
+            }
         }
     }
 
     fun logout(onSuccess: () -> Unit) {
-        token = ""; currentUser = null; loginSuccess = false; onSuccess()
+        saveToken("")
+        currentUser = null
+        loginSuccess = false
+        onSuccess()
     }
 }

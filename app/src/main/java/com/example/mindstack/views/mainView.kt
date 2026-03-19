@@ -26,6 +26,7 @@ import com.example.mindstack.ui.CheckInViewModel
 import com.example.mindstack.viewmodels.MainViewModel
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun MainView(
@@ -38,22 +39,19 @@ fun MainView(
     val data = mainViewModel.dashboardData
     val today = data?.todayCheckin
 
-    // Estados reactivos del ViewModel de Check-in
-    val hasSleepStarted = checkInViewModel.savedSleepStart != null
+    val isSleeping = data?.hasPendingSleepStart == true || checkInViewModel.savedSleepStart != null
     val moodSeleccionado = checkInViewModel.selectedMoodId != null
-    val isMorning = LocalTime.now().hour < 12
 
-    // Carga inicial del Dashboard al entrar
     LaunchedEffect(Unit) {
         if (authViewModel.token.isNotEmpty()) {
             mainViewModel.fetchDashboard(authViewModel.token)
         }
     }
 
-    // Refresco automático del Dashboard cuando el envío es exitoso
     LaunchedEffect(checkInViewModel.checkInSuccess) {
         if (checkInViewModel.checkInSuccess) {
-            Toast.makeText(context, "¡Datos sincronizados!", Toast.LENGTH_SHORT).show()
+            val msg = if (isSleeping) "¡Que descanses!" else "¡Buen día! Datos actualizados."
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             mainViewModel.fetchDashboard(authViewModel.token)
             checkInViewModel.checkInSuccess = false
         }
@@ -62,7 +60,6 @@ fun MainView(
     Scaffold(containerColor = Color.White) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
 
-            // --- HEADER CON RACHA ---
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 20.dp)) {
                 Column {
                     Text("Home", fontSize = 36.sp, fontWeight = FontWeight.W500, color = Color.Black)
@@ -81,7 +78,6 @@ fun MainView(
                 )
             }
 
-            // --- PANEL DE CONTENIDO AZUL ---
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -94,7 +90,6 @@ fun MainView(
             ) {
                 Spacer(modifier = Modifier.height(25.dp))
 
-                // CONSEJO DINÁMICO DE PINKY
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -106,78 +101,77 @@ fun MainView(
                         modifier = Modifier.padding(16.dp),
                         textAlign = TextAlign.Center,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // FILA 1: Semáforo y Batería
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(16.dp)) {
                     CustomStatCard(
                         "Semáforo:",
-                        today?.semaphore?.label ?: "Cargando",
+                        today?.semaphore?.label ?: "---",
                         mainViewModel.getSemaphoreIcon(today?.semaphore?.color),
                         Modifier.weight(1f)
                     )
                     CustomStatCard(
                         "Batería:",
-                        "${today?.batteryCog ?: 0}%",
+                        if (today != null) "${today.batteryCog}%" else "0%",
                         mainViewModel.getBatteryIcon(today?.batteryCog ?: 0),
-                        Modifier.weight(1f)
+                        Modifier.weight(1f),
+                        onClick = { navController.navigate("list") }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // FILA 2: Deuda y Horas Dormidas
+                val sleepDebtFormatted = String.format(Locale.US, "%.1f", today?.sleepDebt ?: 0.0)
+                val hoursSleepFormatted = String.format(Locale.US, "%.1f", today?.hoursSleep ?: 0.0)
+
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(16.dp)) {
-                    CustomStatCard("Deuda:", "${today?.sleepDebt ?: 0.0} hrs", 0, Modifier.weight(1f))
-                    CustomStatCard("Dormido:", "${today?.hoursSleep ?: 0.0} hrs", 0, Modifier.weight(1f))
+                    CustomStatCard("Deuda:", "$sleepDebtFormatted hrs", 0, Modifier.weight(1f))
+                    CustomStatCard("Dormido:", "$hoursSleepFormatted hrs", 0, Modifier.weight(1f))
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // --- BOTÓN DE ACCIÓN RESTAURADO ---
                 if (checkInViewModel.isLoading) {
                     CircularProgressIndicator(color = Color(0xFF5589B7))
                 } else {
                     Button(
                         onClick = {
-                            if (!moodSeleccionado) {
-                                navController.navigate("mood")
+                            val now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+                            if (isSleeping) {
+                                checkInViewModel.endSleep(now, authViewModel.token)
                             } else {
-                                val now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
-                                // LLAMADA DIRECTA: Pasamos el token String como lo pide el ViewModel
-                                checkInViewModel.submitDailyCheckIn(
-                                    isMorning = isMorning,
-                                    currentTime = now,
-                                    token = authViewModel.token,
-                                    mood = checkInViewModel.selectedMoodId ?: 3
-                                )
+                                if (!moodSeleccionado) {
+                                    navController.navigate("mood")
+                                } else {
+                                    checkInViewModel.startSleep(now)
+                                }
                             }
                         },
                         modifier = Modifier.width(240.dp).height(60.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (!moodSeleccionado) Color.DarkGray
-                            else if (hasSleepStarted) Color(0xFF4CAF50)
-                            else Color(0xFF5589B7)
+                            containerColor = if (isSleeping) Color(0xFF4CAF50) else Color(0xFF5589B7)
                         ),
                         shape = RoundedCornerShape(25.dp)
                     ) {
                         Text(
-                            text = if (!moodSeleccionado) "Indicar Humor"
-                            else if (hasSleepStarted) "¡Ya desperté!"
-                            else "A dormir",
+                            text = if (isSleeping) "¡Ya desperté!" else "A dormir",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                // Info de estado debajo del botón
-                checkInViewModel.savedSleepStart?.let {
-                    Text("Hora inicio: $it", color = Color.DarkGray, modifier = Modifier.padding(top = 10.dp))
+                if (isSleeping) {
+                    Text(
+                        "Durmiendo desde: ${data?.hasPendingSleepStart ?: checkInViewModel.savedSleepStart}",
+                        color = Color.DarkGray,
+                        modifier = Modifier.padding(top = 10.dp)
+                    )
                 }
 
                 checkInViewModel.errorMessage?.let {
@@ -191,9 +185,9 @@ fun MainView(
 }
 
 @Composable
-fun CustomStatCard(label: String, value: String, iconRes: Int, modifier: Modifier) {
+fun CustomStatCard(label: String, value: String, iconRes: Int, modifier: Modifier, onClick: () -> Unit = {}) {
     Card(
-        modifier = modifier.height(160.dp),
+        modifier = modifier.height(160.dp).clickable { onClick() },
         shape = RoundedCornerShape(25.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -203,7 +197,7 @@ fun CustomStatCard(label: String, value: String, iconRes: Int, modifier: Modifie
             verticalArrangement = Arrangement.Center
         ) {
             Text(label, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
             if (iconRes != 0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Image(painter = painterResource(id = iconRes), contentDescription = null, modifier = Modifier.size(55.dp))

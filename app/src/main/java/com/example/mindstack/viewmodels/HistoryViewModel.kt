@@ -7,10 +7,10 @@ import com.example.mindstack.R
 import com.example.mindstack.data.RetrofitClient
 import kotlinx.coroutines.launch
 
-// Modelo para la UI
 data class HistoryItem(
     val displayDate: String,
     val battery: Int,
+    val batteryIcon: Int,
     val mood: String,
     val hoursSlept: Float,
     val trafficLightColor: Int,
@@ -27,16 +27,19 @@ class HistoryViewModel : ViewModel() {
         isLoading = true
         viewModelScope.launch {
             try {
-                // Aseguramos el formato Bearer
                 val authHeader = if (token.startsWith("Bearer ")) token else "Bearer $token"
                 val response = RetrofitClient.checkinService.getHistory(authHeader)
 
                 if (response.isSuccessful) {
                     val body = response.body() ?: emptyList()
-                    historyList = body.map { res ->
+                    val sortedBody = body.sortedByDescending { it.checkinId }
+                    val total = sortedBody.size
+                    
+                    historyList = sortedBody.mapIndexed { index, res ->
                         HistoryItem(
-                            displayDate = "Registro #${res.checkinId}",
+                            displayDate = "Registro #${total - index}",
                             battery = res.batteryCog,
+                            batteryIcon = getBatteryIcon(res.batteryCog),
                             mood = when(res.moodScore) {
                                 1 -> "Exhausto"
                                 2 -> "Triste"
@@ -61,5 +64,11 @@ class HistoryViewModel : ViewModel() {
                 isLoading = false
             }
         }
+    }
+
+    private fun getBatteryIcon(percentage: Int): Int = when {
+        percentage >= 75 -> R.drawable.bateria_verde
+        percentage >= 35 -> R.drawable.bateria_amarilla
+        else -> R.drawable.bateria_roja
     }
 }
