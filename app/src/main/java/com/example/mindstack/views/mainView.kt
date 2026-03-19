@@ -115,10 +115,13 @@ fun MainView(
                         mainViewModel.getSemaphoreIcon(today?.semaphore?.color),
                         Modifier.weight(1f)
                     )
+                    
+                    // CORRECCIÓN: Si no hay checkin de hoy, mostrar el promedio semanal en batería
+                    val displayBattery = today?.batteryCog ?: data?.weekBatteryAvg?.toInt() ?: 0
                     CustomStatCard(
                         "Batería:",
-                        if (today != null) "${today.batteryCog}%" else "0%",
-                        mainViewModel.getBatteryIcon(today?.batteryCog ?: 0),
+                        "$displayBattery%",
+                        mainViewModel.getBatteryIcon(displayBattery),
                         Modifier.weight(1f),
                         onClick = { navController.navigate("list") }
                     )
@@ -136,7 +139,7 @@ fun MainView(
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                if (checkInViewModel.isLoading) {
+                if (mainViewModel.isLoading || checkInViewModel.isLoading) {
                     CircularProgressIndicator(color = Color(0xFF5589B7))
                 } else {
                     Button(
