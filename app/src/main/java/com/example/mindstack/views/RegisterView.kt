@@ -1,8 +1,10 @@
 package com.example.mindstack.views
 
 import android.app.DatePickerDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -13,11 +15,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -32,6 +40,8 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var password by remember { mutableStateOf("") }
     var dob by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("M") }
+    var acceptedPolicies by remember { mutableStateOf(false) }
+    var showModal by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
@@ -48,6 +58,38 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
+
+    // MODAL DE TÉRMINOS Y CONDICIONES
+    if (showModal) {
+        AlertDialog(
+            onDismissRequest = { showModal = false },
+            title = { Text("Aviso de Privacidad y Términos", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = "En cumplimiento con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), se informa que la aplicación *MindStack* recolecta datos personales y psicométricos con el único fin de gestionar la energía personal y el bienestar mental del usuario.\n\n" +
+                                "- Se establece explícitamente que el tratamiento de estos datos tiene fines estrictamente académicos. Sus datos no serán compartidos con terceros bajo ninguna circunstancia.\n\n" +
+                                "2. Derechos ARCO\nUsted tiene derecho a Acceder, Rectificar, Cancelar u Oponerse (Derechos ARCO) al tratamiento de su información.\nProcedimiento: Si desea que sus datos sean eliminados de nuestros registros, puede solicitarlo enviando un correo electrónico al administrador del equipo.\n\n" +
+                                "3. Seguridad Técnica y Almacenamiento\nPara garantizar la integridad de su información, MindStack implementa los estándares internacionales de OWASP Mobile Top 10:\nCifrado de Datos: La base de datos local (Room) no se almacena en texto plano; se utiliza la librería SQLCipher para encriptar toda la información mediante una clave de seguridad.\nMínimo Privilegio: La aplicación solo solicita los permisos estrictamente necesarios para su funcionamiento (evitando el uso innecesario de GPS o Cámara).\n\n" +
+                                "4. Deslinde de Responsabilidad Médica\nFuncionamiento del Semáforo: El indicador de bienestar se calcula comparando las horas de sueño reportadas por el usuario con su tiempo de reacción en las dinámicas de la app.\nNo Sustitución: Esta herramienta no sustituye el consejo médico profesional. MindStack es un gestor de bienestar y no debe utilizarse para diagnósticos clínicos.",
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Justify,
+                        color = Color.Black
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showModal = false }) {
+                    Text("Entendido", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -140,6 +182,45 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             Text("Otro")
         }
 
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // CHECKBOX CON ENLACE A MODAL
+        val annotatedText = buildAnnotatedString {
+            append("Acepto las ")
+            pushStringAnnotation(tag = "URL", annotation = "terms")
+            withStyle(
+                style = SpanStyle(
+                    color = Color(0xFF4A80B4),
+                    textDecoration = TextDecoration.Underline,
+                    fontWeight = FontWeight.Bold
+                )
+            ) {
+                append("políticas y términos de uso")
+            }
+            pop()
+            append(" de MindStack.")
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = acceptedPolicies,
+                onCheckedChange = { acceptedPolicies = it }
+            )
+            ClickableText(
+                text = annotatedText,
+                onClick = { offset ->
+                    annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                        .firstOrNull()?.let {
+                            showModal = true
+                        }
+                },
+                style = TextStyle(fontSize = 12.sp, color = Color.DarkGray, lineHeight = 16.sp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(30.dp))
 
         if (authViewModel.isLoading) {
@@ -151,6 +232,8 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                         localError = "La contraseña debe tener al menos 6 caracteres"
                     } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                         localError = "Email inválido"
+                    } else if (!acceptedPolicies) {
+                        localError = "Debes aceptar las políticas para continuar"
                     } else {
                         localError = null
                         authViewModel.registerUser(name, lastName, email, password, dob, gender) {
@@ -160,7 +243,8 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(55.dp)
+                modifier = Modifier.fillMaxWidth().height(55.dp),
+                enabled = acceptedPolicies
             ) {
                 Text("Registrarse")
             }
@@ -170,5 +254,6 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         displayError?.let {
             Text(it, color = Color.Red, modifier = Modifier.padding(top = 10.dp))
         }
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }

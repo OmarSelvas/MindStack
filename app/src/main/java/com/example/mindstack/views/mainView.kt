@@ -39,6 +39,11 @@ fun MainView(
     val data = mainViewModel.dashboardData
     val today = data?.todayCheckin
 
+    // Usar el estado reactivo del ViewModel para la batería y semáforo
+    val displayBattery = mainViewModel.currentBattery ?: data?.weekBatteryAvg?.toInt() ?: 0
+    val semaphoreIcon = mainViewModel.getSemaphoreIcon(mainViewModel.currentSemaphoreColor, mainViewModel.currentSemaphoreLabel)
+    val recommendationText = mainViewModel.currentRecommendation ?: "¡Hola! Registra tu sueño para recibir un consejo."
+
     val isSleeping = data?.hasPendingSleepStart == true || checkInViewModel.savedSleepStart != null
     val moodSeleccionado = checkInViewModel.selectedMoodId != null
 
@@ -97,7 +102,7 @@ fun MainView(
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Text(
-                        text = today?.semaphore?.recommendation ?: "¡Hola! Registra tu sueño para recibir un consejo.",
+                        text = recommendationText,
                         modifier = Modifier.padding(16.dp),
                         textAlign = TextAlign.Center,
                         fontSize = 14.sp,
@@ -111,12 +116,11 @@ fun MainView(
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(16.dp)) {
                     CustomStatCard(
                         "Semáforo:",
-                        today?.semaphore?.label ?: "---",
-                        mainViewModel.getSemaphoreIcon(today?.semaphore?.color),
+                        mainViewModel.currentSemaphoreLabel ?: "---",
+                        semaphoreIcon,
                         Modifier.weight(1f)
                     )
                     
-                    val displayBattery = today?.batteryCog ?: data?.weekBatteryAvg?.toInt() ?: 0
                     CustomStatCard(
                         "Batería:",
                         "$displayBattery%",
