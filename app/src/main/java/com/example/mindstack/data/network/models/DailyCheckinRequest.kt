@@ -1,6 +1,5 @@
 package com.example.mindstack.data.network
 
-import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -28,19 +27,19 @@ interface CheckinApiService {
 }
 
 data class DailyCheckinRequest(
-    @SerializedName("sleep_start") val sleepStart: String,
-    @SerializedName("sleep_end") val sleepEnd: String,
-    @SerializedName("mood_score") val moodScore: Int
+    val sleepStart: String,
+    val sleepEnd: String,
+    val moodScore: Int
 )
 
 data class DailyCheckinResponse(
-    @SerializedName("checkin_id", alternate = ["id"]) val checkinId: Int,
-    @SerializedName("hours_sleep") val hoursSleep: Double,
-    @SerializedName("sleep_debt") val sleepDebt: Double,
-    @SerializedName("sleep_percent") val sleepPercent: Double,
-    @SerializedName("mood_score") val moodScore: Int,
+    val checkinId: Int,
+    val hoursSleep: Double,
+    val sleepDebt: Double,
+    val sleepPercent: Double,
+    val moodScore: Int,
     val semaphore: SemaphoreResponse,
-    @SerializedName("battery_cog", alternate = ["battery", "batteryCog"]) val batteryCog: Int,
+    val batteryCog: Int,
     val fatiga: Int,
     val message: String,
     val personalizedMessage: PersonalizedMessage? = null
@@ -53,11 +52,11 @@ data class SemaphoreResponse(
 )
 
 data class CombinedBatteryResponse(
-    @SerializedName("final_battery") val finalBattery: Int,
+    val finalBattery: Int,
     val fatiga: Int,
-    @SerializedName("semaphore_color") val semaphoreColor: String,
-    @SerializedName("cognitive_semaphore") val cognitiveSemaphore: String,
-    @SerializedName("global_recommendation") val globalRecommendation: String,
+    val semaphoreColor: String,
+    val cognitiveSemaphore: String,
+    val globalRecommendation: String,
     val personalizedMessage: PersonalizedMessage
 )
 

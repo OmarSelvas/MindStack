@@ -1,5 +1,6 @@
 package com.example.mindstack.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,6 +19,7 @@ class MemoryViewModel : ViewModel() {
     var moves by mutableStateOf(0)
     var isGameFinished by mutableStateOf(false)
     var isProcessing by mutableStateOf(false)
+    var isSending by mutableStateOf(false)
 
     private val allImages = listOf(
         R.drawable.par_1, R.drawable.par_2, R.drawable.par_3,
@@ -58,7 +60,7 @@ class MemoryViewModel : ViewModel() {
 
     private fun checkMatch(authVm: AuthViewModel, checkinId: Int) {
         viewModelScope.launch {
-            delay(500) // Reducido el tiempo de espera (era 800)
+            delay(500)
             if (cards[flippedCards[0]].imageRes == cards[flippedCards[1]].imageRes) {
                 matchedCards.addAll(flippedCards)
                 if (matchedCards.size == cards.size) {
@@ -77,13 +79,35 @@ class MemoryViewModel : ViewModel() {
         }
     }
 
-    fun submitResults(authVm: AuthViewModel, checkinId: Int) {
+    private fun submitResults(authVm: AuthViewModel, checkinId: Int) {
+        if (checkinId == 0) {
+            Log.e("MEMORY_SYNC", "No se puede enviar: checkinId es 0")
+            return
+        }
+
         viewModelScope.launch {
+            isSending = true
             try {
-                val request = MemoryGameRequest(checkinId, matchedCards.size / 2, 6)
-                RetrofitClient.gameService.submitMemoryGame("Bearer ${authVm.token}", request)
+                val token = if (authVm.token.startsWith("Bearer ")) authVm.token else "Bearer ${authVm.token}"
+                // Enviamos correctHits (pares encontrados) y totalRequired
+                val request = MemoryGameRequest(
+                    idDailyCheckin = checkinId,
+                    correctHits = matchedCards.size / 2,
+                    totalRequired = 6 // Según tu lógica de niveles
+                )
+                
+                Log.d("MEMORY_SYNC", "Enviando resultados: $request")
+                val response = RetrofitClient.gameService.submitMemoryGame(token, request)
+                
+                if (response.isSuccessful) {
+                    Log.d("MEMORY_SYNC", "Resultados guardados correctamente: ${response.body()}")
+                } else {
+                    Log.e("MEMORY_SYNC", "Error al guardar: ${response.code()} - ${response.errorBody()?.string()}")
+                }
             } catch (e: Exception) {
-                // Manejar error de red si es necesario
+                Log.e("MEMORY_SYNC", "Fallo de conexión: ${e.message}")
+            } finally {
+                isSending = false
             }
         }
     }

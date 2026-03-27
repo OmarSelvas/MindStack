@@ -49,11 +49,7 @@ class HistoryViewModel : ViewModel() {
                                 else -> "Neutral"
                             },
                             hoursSlept = res.hoursSleep.toFloat(),
-                            trafficLightColor = when(res.semaphore.color.lowercase()) {
-                                "verde" -> R.drawable.semaforo_verde
-                                "amarillo" -> R.drawable.semaforo_amarillo
-                                else -> R.drawable.semaforo_rojo
-                            },
+                            trafficLightColor = getSemaphoreIcon(res.semaphore.color, res.semaphore.label),
                             trafficLightName = res.semaphore.label
                         )
                     }
@@ -63,6 +59,30 @@ class HistoryViewModel : ViewModel() {
             } finally {
                 isLoading = false
             }
+        }
+    }
+
+    /**
+     * Retorna el icono del semáforo basado en color, etiqueta, ID o hexadecimal.
+     */
+    private fun getSemaphoreIcon(color: String?, label: String? = null): Int {
+        val c = color?.lowercase()?.trim() ?: ""
+        val l = label?.lowercase()?.trim() ?: ""
+
+        return when {
+            // VERDE: 1, Verde, Estable, #4caf50
+            c == "1" || l == "1" || c.contains("verde") || l.contains("verde") || 
+            c == "estable" || l == "estable" || c == "#4caf50" -> R.drawable.semaforo_verde
+
+            // AMARILLO: 2, Amarillo, Alerta, #ffeb3b, #ffc107
+            c == "2" || l == "2" || c.contains("amarillo") || l.contains("amarillo") || 
+            c == "alerta" || l == "alerta" || c == "#ffeb3b" || c == "#ffc107" -> R.drawable.semaforo_amarillo
+
+            // ROJO: 3, Rojo, Critico, #f44336
+            c == "3" || l == "3" || c.contains("rojo") || l.contains("rojo") || 
+            c.contains("critico") || l.contains("critico") || c == "#f44336" -> R.drawable.semaforo_rojo
+
+            else -> R.drawable.semaforo_verde
         }
     }
 

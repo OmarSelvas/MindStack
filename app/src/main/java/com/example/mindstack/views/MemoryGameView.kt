@@ -16,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,16 +24,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindstack.R
 import com.example.mindstack.ui.AuthViewModel
+import com.example.mindstack.viewmodels.MainViewModel
 import com.example.mindstack.viewmodels.MemoryViewModel
 
 @Composable
 fun MemoryGameView(
     navController: NavController,
     authViewModel: AuthViewModel,
+    mainViewModel: MainViewModel,
     viewModel: MemoryViewModel
 ) {
-    // CORRECCIÓN: Usar el ID de checkin real si está disponible, o uno por defecto
-    val checkinId = 1 
+    // Obtenemos el ID de checkin real del dashboard
+    val checkinId = mainViewModel.dashboardData?.todayCheckin?.checkinId 
+                  ?: mainViewModel.dashboardData?.pendingCheckinId ?: 0
 
     // Reiniciar el juego al entrar para evitar estados de cuentas anteriores
     LaunchedEffect(Unit) {
@@ -122,7 +124,13 @@ fun MemoryGameView(
                         Text("Has completado todos los niveles", fontSize = 16.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(
-                            onClick = { navController.popBackStack() },
+                            onClick = { 
+                                // Refrescar dashboard para ver cambios
+                                if (authViewModel.token.isNotEmpty()) {
+                                    mainViewModel.fetchDashboard(authViewModel.token)
+                                }
+                                navController.popBackStack() 
+                            },
                             modifier = Modifier.fillMaxWidth().height(50.dp),
                             shape = RoundedCornerShape(25.dp)
                         ) {
