@@ -1,160 +1,259 @@
 package com.example.mindstack.views
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import android.app.DatePickerDialog
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.mindstack.R
-import com.example.mindstack.ui.theme.MindStackTheme
-import java.time.Instant
-import java.time.LocalDate
-import java.time.Period
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import com.example.mindstack.ui.AuthViewModel
+import java.util.Calendar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterView(navController: NavController) {
+fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var name by remember { mutableStateOf("") }
-    var surnames by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var dateOfBirth by remember { mutableStateOf<LocalDate?>(null) }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var dob by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("M") }
+    var acceptedPolicies by remember { mutableStateOf(false) }
+    var showModal by remember { mutableStateOf(false) }
+    var localError by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val mesFormateado = if (month + 1 < 10) "0${month + 1}" else "${month + 1}"
+            val diaFormateado = if (dayOfMonth < 10) "0$dayOfMonth" else "$dayOfMonth"
+            dob = "$year-$mesFormateado-$diaFormateado"
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    // MODAL DE TÉRMINOS Y CONDICIONES
+    if (showModal) {
+        AlertDialog(
+            onDismissRequest = { showModal = false },
+            title = { Text("Aviso de Privacidad y Términos", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = "En cumplimiento con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), se informa que la aplicación *MindStack* recolecta datos personales y psicométricos con el único fin de gestionar la energía personal y el bienestar mental del usuario.\n\n" +
+                                "- Se establece explícitamente que el tratamiento de estos datos tiene fines estrictamente académicos. Sus datos no serán compartidos con terceros bajo ninguna circunstancia.\n\n" +
+                                "2. Derechos ARCO\nUsted tiene derecho a Acceder, Rectificar, Cancelar u Oponerse (Derechos ARCO) al tratamiento de su información.\nProcedimiento: Si desea que sus datos sean eliminados de nuestros registros, puede solicitarlo enviando un correo electrónico al administrador del equipo.\n\n" +
+                                "3. Seguridad Técnica y Almacenamiento\nPara garantizar la integridad de su información, MindStack implementa los estándares internacionales de OWASP Mobile Top 10:\nCifrado de Datos: La base de datos local (Room) no se almacena en texto plano; se utiliza la librería SQLCipher para encriptar toda la información mediante una clave de seguridad.\nMínimo Privilegio: La aplicación solo solicita los permisos estrictamente necesarios para su funcionamiento (evitando el uso innecesario de GPS o Cámara).\n\n" +
+                                "4. Deslinde de Responsabilidad Médica\nFuncionamiento del Semáforo: El indicador de bienestar se calcula comparando las horas de sueño reportadas por el usuario con su tiempo de reacción en las dinámicas de la app.\nNo Sustitución: Esta herramienta no sustituye el consejo médico profesional. MindStack es un gestor de bienestar y no debe utilizarse para diagnósticos clínicos.",
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Justify,
+                        color = Color.Black
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showModal = false }) {
+                    Text("Entendido", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE0E0E0)),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.pinky_happy),
-                contentDescription = "Mindstack Logo"
+        Spacer(modifier = Modifier.height(40.dp))
+        Text("Crear Cuenta", fontSize = 32.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(30.dp))
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nombre") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Mindstack",
-                style = MaterialTheme.typography.headlineLarge
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = lastName,
+            onValueChange = { lastName = it },
+            label = { Text("Apellidos") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
             )
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                .background(Color(0xFFD0E0F0))
-                .padding(32.dp)
-        ) {
-            Text(text = "Nombre(s):")
-            OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Apellidos:")
-            OutlinedTextField(value = surnames, onValueChange = { surnames = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-            Text(text = "Fecha de nacimiento:")
-            Button(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(text = dateOfBirth?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: "Seleccionar fecha")
-            }
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            )
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-            if (showDatePicker) {
-                val datePickerState = rememberDatePickerState()
-                val confirmEnabled = remember { derivedStateOf { datePickerState.selectedDateMillis != null } }
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                datePickerState.selectedDateMillis?.let {
-                                    dateOfBirth = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
-                                }
-                                showDatePicker = false
-                            },
-                            enabled = confirmEnabled.value
-                        ) {
-                            Text("OK")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancelar")
-                        }
-                    }
-                ) {
-                    DatePicker(state = datePickerState)
+        OutlinedTextField(
+            value = dob,
+            onValueChange = { },
+            label = { Text("Fecha de Nacimiento") },
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                IconButton(onClick = { datePickerDialog.show() }) {
+                    Icon(Icons.Default.DateRange, contentDescription = null)
                 }
             }
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Usuario:")
-            OutlinedTextField(value = username, onValueChange = { username = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Correo:")
-            OutlinedTextField(value = email, onValueChange = { email = it }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Contraseña:")
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation()
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text("Género", modifier = Modifier.align(Alignment.Start), fontWeight = FontWeight.SemiBold)
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = gender == "M", onClick = { gender = "M" })
+            Text("M")
+            Spacer(modifier = Modifier.width(10.dp))
+            RadioButton(selected = gender == "F", onClick = { gender = "F" })
+            Text("F")
+            Spacer(modifier = Modifier.width(10.dp))
+            RadioButton(selected = gender == "O", onClick = { gender = "O" })
+            Text("Otro")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // CHECKBOX CON ENLACE A MODAL
+        val annotatedText = buildAnnotatedString {
+            append("Acepto las ")
+            pushStringAnnotation(tag = "URL", annotation = "terms")
+            withStyle(
+                style = SpanStyle(
+                    color = Color(0xFF4A80B4),
+                    textDecoration = TextDecoration.Underline,
+                    fontWeight = FontWeight.Bold
+                )
+            ) {
+                append("políticas y términos de uso")
+            }
+            pop()
+            append(" de MindStack.")
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = acceptedPolicies,
+                onCheckedChange = { acceptedPolicies = it }
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            ClickableText(
+                text = annotatedText,
+                onClick = { offset ->
+                    annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                        .firstOrNull()?.let {
+                            showModal = true
+                        }
+                },
+                style = TextStyle(fontSize = 12.sp, color = Color.DarkGray, lineHeight = 16.sp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        if (authViewModel.isLoading) {
+            CircularProgressIndicator()
+        } else {
             Button(
-                onClick = { navController.navigate("main_view") },
-                modifier = Modifier.fillMaxWidth()
+                onClick = {
+                    if (password.length < 6) {
+                        localError = "La contraseña debe tener al menos 6 caracteres"
+                    } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                        localError = "Email inválido"
+                    } else if (!acceptedPolicies) {
+                        localError = "Debes aceptar las políticas para continuar"
+                    } else {
+                        localError = null
+                        authViewModel.registerUser(name, lastName, email, password, dob, gender) {
+                            navController.navigate("main_view") {
+                                popUpTo("register_view") { inclusive = true }
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(55.dp),
+                enabled = acceptedPolicies
             ) {
                 Text("Registrarse")
             }
         }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun RegisterViewPreview() {
-    MindStackTheme {
-        RegisterView(navController = rememberNavController())
+        val displayError = localError ?: authViewModel.errorMessage
+        displayError?.let {
+            Text(it, color = Color.Red, modifier = Modifier.padding(top = 10.dp))
+        }
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }

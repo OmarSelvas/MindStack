@@ -1,171 +1,168 @@
 package com.example.mindstack.views
 
+import android.widget.Toast
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.mindstack.R
-import com.example.mindstack.ui.theme.MindStackTheme
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
+import com.example.mindstack.ui.AuthViewModel
+import com.example.mindstack.ui.CheckInViewModel
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 
-data class Mood(val name: String, val color: Color, val emoji: String)
+// Datos de los estados de ánimo
+data class MoodItem(val name: String, val color: Color, val imageRes: Int)
 
-val moods = listOf(
-    Mood("Exhausto", Color(0xFFBDB2FF), "x_x"),
-    Mood("Triste", Color(0xFFFFD6A5), ":("),
-    Mood("Neutral", Color(0xFFFDFFB6), ":|"),
-    Mood("Feliz", Color(0xFFCAFFBF), ":)"),
-    Mood("Excelente", Color(0xFF9BF6FF), ":D")
+val listaMoods = listOf(
+    MoodItem("Exhausto", Color(0xFFE9B86A), R.drawable.pinky_exhausted),
+    MoodItem("Triste", Color(0xFFC0DCEA), R.drawable.pinky_sad),
+    MoodItem("Neutral", Color(0xFF9CC173), R.drawable.pinky_neutral),
+    MoodItem("Feliz", Color(0xFFB59BDD), R.drawable.pinky_happy),
+    MoodItem("Excelente", Color(0xFF8BA6C9), R.drawable.pinky_excellent)
 )
 
 @Composable
-fun MoodView(navController: NavController) {
-    var selectedMoodIndex by remember { mutableIntStateOf(2) }
-    val currentMood = moods[selectedMoodIndex]
+fun MoodView(
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    checkInViewModel: CheckInViewModel
+) {
+    // Sincronización con el ViewModel (ID 1-5 mapeado a Index 0-4)
+    var selectedMoodIndex by remember {
+        mutableIntStateOf((checkInViewModel.selectedMoodId ?: 3) - 1)
+    }
+    val currentMood = listaMoods[selectedMoodIndex]
+    val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5DC))
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround
-    ) {
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Regresar")
-        }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Indica tu estado de ánimo",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Me siento ${currentMood.name.lowercase()}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
-            )
-        }
-
-        Image(
-            painter = painterResource(id = R.drawable.pinky_happy),
-            contentDescription = currentMood.name,
+    Scaffold(containerColor = Color(0xFFEFEEE0)) { paddingValues ->
+        Column(
             modifier = Modifier
-                .height(200.dp)
-                .fillMaxWidth(),
-            alignment = Alignment.Center
-        )
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(30.dp))
 
-        MoodSlider(
-            selectedMoodIndex = selectedMoodIndex,
-            onMoodChange = { selectedMoodIndex = it }
-        )
-    }
-}
+            Text("Indica tu estado de ánimo", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color.Black)
+            Text("Me siento ${currentMood.name.lowercase()}", fontSize = 18.sp, color = Color.DarkGray)
 
-@Composable
-fun MoodSlider(selectedMoodIndex: Int, onMoodChange: (Int) -> Unit) {
-    val segmentAngle = 180f / moods.size
+            Spacer(modifier = Modifier.weight(0.5f))
 
-    Canvas(modifier = Modifier
-        .fillMaxWidth()
-        .height(200.dp)
-        .pointerInput(Unit) {
-            detectDragGestures { change, _ ->
-                val center = Offset(size.width / 2f, size.height.toFloat())
-                val dragAngle = -atan2(
-                    center.y - change.position.y,
-                    center.x - change.position.x
-                ) * (180f / Math.PI)
-
-                if (dragAngle > 0 && dragAngle < 180) {
-                    val newIndex = ((dragAngle / segmentAngle)).toInt().coerceIn(0, moods.size - 1)
-                    onMoodChange(newIndex)
-                }
-            }
-        }
-    ) {
-        val center = Offset(size.width / 2f, size.height)
-        val radius = size.width / 2f
-
-        // Dibuja los segmentos de color
-        moods.forEachIndexed { index, mood ->
-            drawArc(
-                color = mood.color,
-                startAngle = 180f + index * segmentAngle,
-                sweepAngle = segmentAngle,
-                useCenter = true,
-                size = Size(radius * 2, radius * 2),
-                topLeft = Offset(center.x - radius, center.y - radius)
+            Image(
+                painter = painterResource(id = currentMood.imageRes),
+                contentDescription = null,
+                modifier = Modifier.size(180.dp)
             )
-        }
 
-        // Dibuja los emojis
-        drawIntoCanvas { canvas ->
-            val textPaint = Paint().asFrameworkPaint().apply {
-                isAntiAlias = true
-                textSize = 24.sp.toPx()
-                color = Color.Black.toArgb()
-                textAlign = android.graphics.Paint.Align.CENTER
+            Spacer(modifier = Modifier.weight(0.5f))
+
+            Text("▼", fontSize = 24.sp, color = Color(0xFF3E2723))
+
+            Box(
+                modifier = Modifier.fillMaxWidth().height(180.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                MoodWheelCircularInfinita(
+                    selectedIndex = selectedMoodIndex,
+                    onMoodChange = { selectedMoodIndex = it }
+                )
             }
-            moods.forEachIndexed { index, mood ->
-                val angleRad = Math.toRadians((180 + index * segmentAngle + segmentAngle / 2).toDouble())
-                val x = center.x + (radius * 0.7f) * cos(angleRad).toFloat()
-                val y = center.y + (radius * 0.7f) * sin(angleRad).toFloat()
-                canvas.nativeCanvas.drawText(mood.emoji, x, y, textPaint)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = {
+                    // LLAMADA CLAVE: Sincroniza con la función que agregamos al ViewModel
+                    checkInViewModel.updateMood(selectedMoodIndex + 1)
+                    Toast.makeText(context, "Estado de ánimo guardado", Toast.LENGTH_SHORT).show()
+                    navController.popBackStack()
+                },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(55.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A80B4))
+            ) {
+                Text("Confirmar Humor", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
+            Spacer(modifier = Modifier.height(30.dp))
         }
-
-        // Dibuja el indicador
-        val indicatorAngle = Math.toRadians((180 + selectedMoodIndex * segmentAngle + segmentAngle / 2).toDouble())
-        val indicatorEndX = center.x + (radius * 0.9f) * cos(indicatorAngle).toFloat()
-        val indicatorEndY = center.y + (radius * 0.9f) * sin(indicatorAngle).toFloat()
-
-        drawCircle(color = Color(0xFF6B4F4F), radius = 20f, center = Offset(indicatorEndX, indicatorEndY))
-        drawCircle(color = Color.White, radius = 8f, center = Offset(indicatorEndX, indicatorEndY))
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun MoodViewPreview() {
-    MindStackTheme {
-        MoodView(navController = rememberNavController())
+fun MoodWheelCircularInfinita(selectedIndex: Int, onMoodChange: (Int) -> Unit) {
+    val totalSegments = listaMoods.size
+    val segmentAngle = 360f / totalSegments
+    val baseOffset = 270f - (segmentAngle / 2f)
+
+    val rotationAnim by animateFloatAsState(
+        targetValue = baseOffset - (selectedIndex * segmentAngle),
+        animationSpec = tween(durationMillis = 400),
+        label = "wheelRotation"
+    )
+
+    var dragAmountAccumulated by remember { mutableFloatStateOf(0f) }
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .pointerInput(selectedIndex) {
+                detectHorizontalDragGestures(
+                    onDragEnd = { dragAmountAccumulated = 0f },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        dragAmountAccumulated += dragAmount
+
+                        val threshold = 70f
+                        if (dragAmountAccumulated > threshold) {
+                            val newIndex = if (selectedIndex > 0) selectedIndex - 1 else totalSegments - 1
+                            onMoodChange(newIndex)
+                            dragAmountAccumulated = 0f
+                        } else if (dragAmountAccumulated < -threshold) {
+                            val newIndex = if (selectedIndex < totalSegments - 1) selectedIndex + 1 else 0
+                            onMoodChange(newIndex)
+                            dragAmountAccumulated = 0f
+                        }
+                    }
+                )
+            }
+    ) {
+        val canvasWidth = size.width
+        val canvasHeight = size.height
+        val centroRotacion = Offset(canvasWidth / 2f, canvasHeight * 1.15f)
+        val radioVisual = canvasWidth * 0.8f
+
+        rotate(degrees = rotationAnim, pivot = centroRotacion) {
+            listaMoods.forEachIndexed { index, mood ->
+                drawArc(
+                    color = mood.color,
+                    startAngle = index * segmentAngle,
+                    sweepAngle = segmentAngle,
+                    useCenter = true,
+                    topLeft = Offset(centroRotacion.x - radioVisual, centroRotacion.y - radioVisual),
+                    size = Size(radioVisual * 2, radioVisual * 2),
+                    style = Fill
+                )
+            }
+        }
     }
 }

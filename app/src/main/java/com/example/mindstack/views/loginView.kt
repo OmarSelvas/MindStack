@@ -1,82 +1,174 @@
 package com.example.mindstack.views
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.mindstack.ui.theme.MindStackTheme
+import com.example.mindstack.R
+import com.example.mindstack.ui.AuthViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginView(navController: NavController) {
+fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    // Observar el éxito del login para navegar al Home
+    LaunchedEffect(authViewModel.loginSuccess) {
+        if (authViewModel.loginSuccess) {
+            navController.navigate("main_view") {
+                popUpTo("login_view") { inclusive = true }
+            }
+        }
+    }
+
+    val textFieldColors = TextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        disabledContainerColor = Color.White,
+        focusedIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent,
+        disabledIndicatorColor = Color.Transparent,
+        cursorColor = Color.Black
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFC7D9E5))
-            .padding(16.dp),
+            .background(Color(0xFFD6D6D6)),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
     ) {
-        Text(
-            text = "MindStack",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(top = 64.dp, bottom = 64.dp)
-        )
-
-        Text(text = "Login")
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = { navController.navigate("main_view") }) {
-            Text("Iniciar sesión")
+        Spacer(modifier = Modifier.height(80.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.pinky_happy),
+                contentDescription = "Mindstack Logo",
+                modifier = Modifier.size(70.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Mindstack",
+                fontSize = 32.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Normal
+            )
         }
 
-    }
-}
+        Spacer(modifier = Modifier.height(60.dp))
 
-@Preview(showBackground = true)
-@Composable
-fun LoginViewPreview() {
-    MindStackTheme {
-        LoginView(navController = rememberNavController())
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(topStart = 60.dp, topEnd = 60.dp))
+                .background(Color(0xFFCFDEE7))
+                .padding(horizontal = 40.dp, vertical = 50.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            authViewModel.errorMessage?.let { error ->
+                Text(
+                    text = error,
+                    color = Color.Red,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = "Correo:",
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 4.dp),
+                fontSize = 18.sp,
+                color = Color.Black
+            )
+            TextField(
+                value = email,
+                onValueChange = { email = it },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = textFieldColors,
+                singleLine = true,
+                placeholder = { Text("ejemplo@correo.com", color = Color.Gray) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                )
+            )
+
+            Spacer(modifier = Modifier.height(25.dp))
+
+            Text(
+                text = "Contraseña:",
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 4.dp),
+                fontSize = 18.sp,
+                color = Color.Black
+            )
+            TextField(
+                value = password,
+                onValueChange = { password = it },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
+                shape = RoundedCornerShape(28.dp),
+                colors = textFieldColors,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                )
+            )
+
+            Spacer(modifier = Modifier.height(50.dp))
+
+            if (authViewModel.isLoading) {
+                CircularProgressIndicator(
+                    color = Color(0xFF4A80B4),
+                    modifier = Modifier.size(50.dp)
+                )
+            } else {
+                Button(
+                    onClick = {
+                        authViewModel.login(email, password, onSuccess = {
+                            // Se navega mediante el LaunchedEffect o aquí
+                        })
+                    },
+                    modifier = Modifier
+                        .width(220.dp)
+                        .height(55.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                ) {
+                    Text(text = "Iniciar sesión", color = Color.Black, fontSize = 18.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            TextButton(onClick = { navController.navigate("register_view") }) {
+                Text("¿No tienes cuenta? Regístrate", color = Color.Black)
+            }
+        }
     }
 }
