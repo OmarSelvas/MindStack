@@ -1,11 +1,14 @@
 package com.example.mindstack.views
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +42,10 @@ fun MainView(
     val data = mainViewModel.dashboardData
     val today = data?.todayCheckin
 
+    // Gestión del tutorial
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    var showTutorial by remember { mutableStateOf(prefs.getBoolean("show_tutorial", true)) }
+
     // Usar el estado reactivo del ViewModel para la batería y semáforo
     val displayBattery = mainViewModel.currentBattery ?: data?.weekBatteryAvg?.toInt() ?: 0
     val semaphoreIcon = mainViewModel.getSemaphoreIcon(mainViewModel.currentSemaphoreColor, mainViewModel.currentSemaphoreLabel)
@@ -62,12 +69,24 @@ fun MainView(
         }
     }
 
+    if (showTutorial) {
+        TutorialDialog(onDismiss = {
+            showTutorial = false
+            prefs.edit().putBoolean("show_tutorial", false).apply()
+        })
+    }
+
     Scaffold(containerColor = Color.White) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
 
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 20.dp)) {
                 Column {
-                    Text("Home", fontSize = 36.sp, fontWeight = FontWeight.W500, color = Color.Black)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Home", fontSize = 36.sp, fontWeight = FontWeight.W500, color = Color.Black)
+                        IconButton(onClick = { showTutorial = true }) {
+                            Icon(Icons.Default.Info, contentDescription = "Tutorial", tint = Color.Gray)
+                        }
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
                             painter = painterResource(id = if (data?.streak?.isActiveToday == true) R.drawable.racha else R.drawable.racha_gris),
@@ -188,6 +207,63 @@ fun MainView(
             }
         }
     }
+}
+
+@Composable
+fun TutorialDialog(onDismiss: () -> Unit) {
+    var step by remember { mutableIntStateOf(1) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = when (step) {
+                    1 -> "¡Bienvenido a MindStack!"
+                    2 -> "El Semáforo de Energía"
+                    else -> "Batería Cognitiva"
+                },
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                val imageRes = when (step) {
+                    1 -> R.drawable.pinky_happy
+                    2 -> R.drawable.semaforo_verde
+                    else -> R.drawable.bateria_verde
+                }
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(100.dp).padding(bottom = 16.dp)
+                )
+                Text(
+                    text = when (step) {
+                        1 -> "MindStack te ayuda a gestionar tu energía mental basándose en tu sueño y desempeño en juegos."
+                        2 -> "Verde significa que estás listo para tareas pesadas. Rojo indica que es mejor descansar."
+                        else -> "Tus juegos miden qué tan cargada está tu 'batería' mental hoy. ¡Intenta mantenerla alta!"
+                    },
+                    textAlign = TextAlign.Center,
+                    fontSize = 16.sp
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                if (step < 3) step++ else onDismiss()
+            }) {
+                Text(if (step < 3) "Siguiente" else "¡Entendido!")
+            }
+        },
+        dismissButton = {
+            if (step > 1) {
+                TextButton(onClick = { step-- }) {
+                    Text("Anterior")
+                }
+            }
+        }
+    )
 }
 
 @Composable

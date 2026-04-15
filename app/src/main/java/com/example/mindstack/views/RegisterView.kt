@@ -1,6 +1,6 @@
 package com.example.mindstack.views
 
-import android.app.DatePickerDialog
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +9,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -30,36 +33,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindstack.ui.AuthViewModel
-import java.util.Calendar
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var name by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var dob by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("M") }
     var acceptedPolicies by remember { mutableStateOf(false) }
     var showModal by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val calendar = Calendar.getInstance()
 
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val mesFormateado = if (month + 1 < 10) "0${month + 1}" else "${month + 1}"
-            val diaFormateado = if (dayOfMonth < 10) "0$dayOfMonth" else "$dayOfMonth"
-            dob = "$year-$mesFormateado-$diaFormateado"
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
+    // DatePicker State (Material 3)
+    val datePickerState = rememberDatePickerState(
+        initialDisplayMode = DisplayMode.Input // Esto permite escribir los números como en Google
     )
-
-    // MODAL DE TÉRMINOS Y CONDICIONES
     if (showModal) {
         AlertDialog(
             onDismissRequest = { showModal = false },
@@ -89,6 +88,31 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                 }
             }
         )
+    }
+
+    // DIÁLOGO DE CALENDARIO (MATERIAL 3)
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        dob = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 
     Column(
@@ -145,7 +169,13 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             value = password,
             onValueChange = { password = it },
             label = { Text("Contraseña") },
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = null)
+                }
+            },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
@@ -158,11 +188,18 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         OutlinedTextField(
             value = dob,
             onValueChange = { },
-            label = { Text("Fecha de Nacimiento") },
+            label = { Text("Fecha de Nacimiento (AAAA-MM-DD)") },
             readOnly = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+            enabled = false, // Hacemos que toda la caja sea clickeable
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
             trailingIcon = {
-                IconButton(onClick = { datePickerDialog.show() }) {
+                IconButton(onClick = { showDatePicker = true }) {
                     Icon(Icons.Default.DateRange, contentDescription = null)
                 }
             }
@@ -213,9 +250,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                 text = annotatedText,
                 onClick = { offset ->
                     annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                        .firstOrNull()?.let {
-                            showModal = true
-                        }
+                        .firstOrNull()?.let { showModal = true }
                 },
                 style = TextStyle(fontSize = 12.sp, color = Color.DarkGray, lineHeight = 16.sp)
             )
@@ -234,9 +269,15 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                         localError = "Email inválido"
                     } else if (!acceptedPolicies) {
                         localError = "Debes aceptar las políticas para continuar"
+                    } else if (dob.isEmpty()) {
+                        localError = "Debes seleccionar tu fecha de nacimiento"
                     } else {
                         localError = null
                         authViewModel.registerUser(name, lastName, email, password, dob, gender) {
+                            // Al registrarse exitosamente, marcamos que YA NO muestre el tutorial
+                            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                            prefs.edit().putBoolean("show_tutorial", false).apply()
+
                             navController.navigate("main_view") {
                                 popUpTo("register_view") { inclusive = true }
                             }
