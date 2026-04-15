@@ -1,6 +1,10 @@
 package com.example.mindstack.views
 
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,13 +12,16 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -52,13 +59,24 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var showModal by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
+    
+    // Estado para saber si el campo de contraseña tiene el foco
+    var isPasswordFocused by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
+    // Lógica del checklist de contraseña
+    val hasMinLength = password.length >= 8
+    val hasUppercase = password.any { it.isUpperCase() }
+    val hasLowercase = password.any { it.isLowerCase() }
+    val hasDigit = password.any { it.isDigit() }
+    val hasSpecialChar = password.any { !it.isLetterOrDigit() && "@$!%*?&#/._-".contains(it) }
+
     // DatePicker State (Material 3)
     val datePickerState = rememberDatePickerState(
-        initialDisplayMode = DisplayMode.Input // Esto permite escribir los números como en Google
+        initialDisplayMode = DisplayMode.Input
     )
+
     if (showModal) {
         AlertDialog(
             onDismissRequest = { showModal = false },
@@ -90,7 +108,6 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         )
     }
 
-    // DIÁLOGO DE CALENDARIO (MATERIAL 3)
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -180,9 +197,30 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isPasswordFocused = it.isFocused },
             singleLine = true
         )
+        
+        // CHECKLIST DE CONTRASEÑA CON DESPLIEGUE ANIMADO
+        AnimatedVisibility(
+            visible = isPasswordFocused,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                PasswordRequirementItem("Mínimo 8 caracteres", hasMinLength)
+                PasswordRequirementItem("Una letra mayúscula", hasUppercase)
+                PasswordRequirementItem("Una letra minúscula", hasLowercase)
+                PasswordRequirementItem("Un número", hasDigit)
+                PasswordRequirementItem("Un carácter especial (@$!%*?&#/._-)", hasSpecialChar)
+            }
+        }
+
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
@@ -191,7 +229,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             label = { Text("Fecha de Nacimiento (AAAA-MM-DD)") },
             readOnly = true,
             modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-            enabled = false, // Hacemos que toda la caja sea clickeable
+            enabled = false,
             colors = OutlinedTextFieldDefaults.colors(
                 disabledTextColor = MaterialTheme.colorScheme.onSurface,
                 disabledBorderColor = MaterialTheme.colorScheme.outline,
@@ -221,7 +259,6 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // CHECKBOX CON ENLACE A MODAL
         val annotatedText = buildAnnotatedString {
             append("Acepto las ")
             pushStringAnnotation(tag = "URL", annotation = "terms")
@@ -261,10 +298,12 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         if (authViewModel.isLoading) {
             CircularProgressIndicator()
         } else {
+            val isPasswordValid = hasMinLength && hasUppercase && hasLowercase && hasDigit && hasSpecialChar
+            
             Button(
                 onClick = {
-                    if (password.length < 6) {
-                        localError = "La contraseña debe tener al menos 6 caracteres"
+                    if (!isPasswordValid) {
+                        localError = "La contraseña no cumple con todos los requisitos"
                     } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                         localError = "Email inválido"
                     } else if (!acceptedPolicies) {
@@ -274,10 +313,6 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                     } else {
                         localError = null
                         authViewModel.registerUser(name, lastName, email, password, dob, gender) {
-                            // Al registrarse exitosamente, marcamos que YA NO muestre el tutorial
-                            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                            prefs.edit().putBoolean("show_tutorial", false).apply()
-
                             navController.navigate("main_view") {
                                 popUpTo("register_view") { inclusive = true }
                             }
@@ -285,7 +320,7 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(55.dp),
-                enabled = acceptedPolicies
+                enabled = acceptedPolicies && isPasswordValid
             ) {
                 Text("Registrarse")
             }
@@ -296,5 +331,27 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             Text(it, color = Color.Red, modifier = Modifier.padding(top = 10.dp))
         }
         Spacer(modifier = Modifier.height(40.dp))
+    }
+}
+
+@Composable
+fun PasswordRequirementItem(text: String, isMet: Boolean) {
+    val color by animateColorAsState(if (isMet) Color(0xFF4CAF50) else Color.Gray)
+    val icon = if (isMet) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            color = color,
+            fontSize = 12.sp,
+            fontWeight = if (isMet) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
