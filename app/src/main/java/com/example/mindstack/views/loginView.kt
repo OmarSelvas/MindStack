@@ -27,8 +27,10 @@ import com.example.mindstack.ui.AuthViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
+    // Variables de estado
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var otpCode by remember { mutableStateOf("") } // Nueva variable para el código
     val context = LocalContext.current
 
     // Observar el éxito del login para navegar al Home
@@ -40,6 +42,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
         }
     }
 
+    // Estilos de los inputs
     val textFieldColors = TextFieldDefaults.colors(
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black,
@@ -58,6 +61,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
             .background(Color(0xFFD6D6D6)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Cabecera con Logo
         Spacer(modifier = Modifier.height(80.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -79,6 +83,7 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
 
         Spacer(modifier = Modifier.height(60.dp))
 
+        // Contenedor principal del formulario
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -87,6 +92,8 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
                 .padding(horizontal = 40.dp, vertical = 50.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            // Mostrar errores del ViewModel
             authViewModel.errorMessage?.let { error ->
                 Text(
                     text = error,
@@ -97,77 +104,161 @@ fun LoginView(navController: NavController, authViewModel: AuthViewModel) {
                 )
             }
 
-            Text(
-                text = "Correo:",
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 4.dp),
-                fontSize = 18.sp,
-                color = Color.Black
-            )
-            TextField(
-                value = email,
-                onValueChange = { email = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                colors = textFieldColors,
-                singleLine = true,
-                placeholder = { Text("ejemplo@correo.com", color = Color.Gray) },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
+            // Alternar entre Login y OTP
+            if (!authViewModel.isWaitingForOtp) {
+                // ===============================================
+                // PANTALLA 1: FORMULARIO NORMAL DE LOGIN
+                // ===============================================
+                Text(
+                    text = "Correo:",
+                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 4.dp),
+                    fontSize = 18.sp,
+                    color = Color.Black
                 )
-            )
-
-            Spacer(modifier = Modifier.height(25.dp))
-
-            Text(
-                text = "Contraseña:",
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 4.dp),
-                fontSize = 18.sp,
-                color = Color.Black
-            )
-            TextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(),
-                shape = RoundedCornerShape(28.dp),
-                colors = textFieldColors,
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                )
-            )
-
-            Spacer(modifier = Modifier.height(50.dp))
-
-            if (authViewModel.isLoading) {
-                CircularProgressIndicator(
-                    color = Color(0xFF4A80B4),
-                    modifier = Modifier.size(50.dp)
-                )
-            } else {
-                Button(
-                    onClick = {
-                        authViewModel.login(email, password, onSuccess = {
-                            // Se navega mediante el LaunchedEffect o aquí
-                        })
-                    },
-                    modifier = Modifier
-                        .width(220.dp)
-                        .height(55.dp),
+                TextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                ) {
-                    Text(text = "Iniciar sesión", color = Color.Black, fontSize = 18.sp)
+                    colors = textFieldColors,
+                    singleLine = true,
+                    placeholder = { Text("ejemplo@correo.com", color = Color.Gray) },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                Text(
+                    text = "Contraseña:",
+                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 4.dp),
+                    fontSize = 18.sp,
+                    color = Color.Black
+                )
+                TextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = textFieldColors,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(50.dp))
+
+                if (authViewModel.isLoading) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF4A80B4),
+                        modifier = Modifier.size(50.dp)
+                    )
+                } else {
+                    Button(
+                        onClick = {
+                            // Se llama al login sin el onSuccess
+                            authViewModel.login(email, password)
+                        },
+                        modifier = Modifier
+                            .width(220.dp)
+                            .height(55.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    ) {
+                        Text(text = "Iniciar sesión", color = Color.Black, fontSize = 18.sp)
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            TextButton(onClick = { navController.navigate("register_view") }) {
-                Text("¿No tienes cuenta? Regístrate", color = Color.Black)
+                TextButton(onClick = { navController.navigate("register_view") }) {
+                    Text("¿No tienes cuenta? Regístrate", color = Color.Black)
+                }
+
+            } else {
+                // ===============================================
+                // PANTALLA 2: INGRESO DE CÓDIGO OTP
+                // ===============================================
+                Text(
+                    text = "Verificación en 2 pasos",
+                    fontSize = 22.sp,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Ingresa el código enviado a:",
+                    color = Color.DarkGray,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = authViewModel.temporaryEmail,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                Text(
+                    text = "Código de 6 dígitos:",
+                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 4.dp),
+                    fontSize = 18.sp,
+                    color = Color.Black
+                )
+                TextField(
+                    value = otpCode,
+                    onValueChange = { if (it.length <= 6) otpCode = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = textFieldColors,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(50.dp))
+
+                if (authViewModel.isLoading) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF4A80B4),
+                        modifier = Modifier.size(50.dp)
+                    )
+                } else {
+                    Button(
+                        onClick = {
+                            authViewModel.verifyOtp(otpCode) {
+                                // Navegación manual por si el LaunchedEffect se retrasa
+                                navController.navigate("main_view") {
+                                    popUpTo("login_view") { inclusive = true }
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .width(220.dp)
+                            .height(55.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                        enabled = otpCode.length == 6
+                    ) {
+                        Text(text = "Confirmar", color = Color.Black, fontSize = 18.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                TextButton(onClick = { authViewModel.cancelOtp() }) {
+                    Text("Cancelar y regresar", color = Color.Black)
+                }
             }
         }
     }

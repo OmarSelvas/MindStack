@@ -228,8 +228,10 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
         } else {
             Button(
                 onClick = {
-                    if (password.length < 6) {
-                        localError = "La contraseña debe tener al menos 6 caracteres"
+                    val passwordPattern = Regex("^(?=.*[0-9])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$")
+                    
+                    if (!passwordPattern.matches(password)) {
+                        localError = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial"
                     } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                         localError = "Email inválido"
                     } else if (!acceptedPolicies) {

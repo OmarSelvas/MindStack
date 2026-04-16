@@ -9,15 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import java.util.concurrent.TimeUnit
 
-// --- INTERFACES: Centralizadas y actualizadas ---
-
-interface AuthApiService {
-    @POST("api/v1/auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
-    @POST("api/v1/auth/login")
-    suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
-}
-
+// Interfaces Adicionales
 interface CheckinApiService {
     @POST("api/v1/checkin")
     suspend fun submitCheckin(
@@ -42,13 +34,13 @@ interface DashboardApiService {
 interface GameApiService {
     @POST("api/v1/games/memory")
     suspend fun submitMemoryGame(
-        @Header("Authorization") token: String, 
+        @Header("Authorization") token: String,
         @Body request: MemoryGameRequest
     ): Response<MemoryGameResponse>
 
     @POST("api/v1/games/neuro-reflex")
     suspend fun submitNeuroReflex(
-        @Header("Authorization") token: String, 
+        @Header("Authorization") token: String,
         @Body request: NeuroReflexRequest
     ): Response<NeuroReflexResponse>
 
@@ -59,8 +51,7 @@ interface GameApiService {
     ): Response<CombinedBatteryResponse>
 }
 
-// --- CLIENTE CENTRALIZADO ---
-
+// Cliente Configurado
 object RetrofitClient {
     private const val BASE_URL = "https://mindstack-back.onrender.com/"
 
