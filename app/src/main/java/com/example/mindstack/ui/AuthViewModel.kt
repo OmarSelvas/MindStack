@@ -35,6 +35,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     var temporaryPreAuthToken by mutableStateOf<String?>(null)
     var temporaryEmail by mutableStateOf("")
 
+    // Tutorial flag
+    var showTutorial by mutableStateOf(false)
+
     init {
         restoreSession()
     }
@@ -55,6 +58,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 idealSleepHours = prefs.getFloat("user_sleep", 8.0f)
             )
             loginSuccess = true
+            // Verificar si debe mostrar el tutorial al iniciar sesión
+            showTutorial = prefs.getBoolean("show_tutorial", true)
         } else {
             loginSuccess = false
         }
@@ -64,6 +69,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         token = newToken
         currentUser = user
         loginSuccess = true
+        showTutorial = true // Mostramos tutorial en el primer registro/login exitoso
         prefs.edit().apply {
             putString("token", newToken)
             putInt("user_id", user.id)
@@ -72,8 +78,14 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             putString("user_email", user.email)
             putString("user_dob", user.dateOfBirth)
             putFloat("user_sleep", user.idealSleepHours)
+            putBoolean("show_tutorial", true)
             apply()
         }
+    }
+
+    fun completeTutorial() {
+        showTutorial = false
+        prefs.edit().putBoolean("show_tutorial", false).apply()
     }
 
     private fun clearAuthData() {

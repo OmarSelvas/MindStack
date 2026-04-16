@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.mindstack.R
@@ -60,6 +61,11 @@ fun MainView(
             mainViewModel.fetchDashboard(authViewModel.token)
             checkInViewModel.checkInSuccess = false
         }
+    }
+
+    // Mostrar el Tutorial si es la primera vez
+    if (authViewModel.showTutorial) {
+        WelcomeTutorialDialog(onDismiss = { authViewModel.completeTutorial() })
     }
 
     Scaffold(containerColor = Color.White) { paddingValues ->
@@ -209,5 +215,112 @@ fun CustomStatCard(label: String, value: String, iconRes: Int, modifier: Modifie
                 Image(painter = painterResource(id = iconRes), contentDescription = null, modifier = Modifier.size(55.dp))
             }
         }
+    }
+}
+
+@Composable
+fun WelcomeTutorialDialog(onDismiss: () -> Unit) {
+    var currentStep by remember { mutableStateOf(1) }
+    
+    Dialog(onDismissRequest = { /* No cerrar al tocar fuera para forzar el tutorial */ }) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "¡Bienvenido a MindStack!",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF5589B7),
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                when (currentStep) {
+                    1 -> TutorialStep(
+                        imageRes = R.drawable.pinky_happy,
+                        title = "Tu bienestar mental",
+                        description = "MindStack te ayuda a monitorear tu estado cognitivo y emocional a través de juegos y registros diarios."
+                    )
+                    2 -> TutorialStep(
+                        imageRes = R.drawable.semaforo_verde,
+                        title = "El Semáforo Cognitivo",
+                        description = "Indica tu nivel de alerta actual. Verde es óptimo, Amarillo precaución y Rojo significa que necesitas descansar."
+                    )
+                    3 -> TutorialStep(
+                        imageRes = R.drawable.bateria_verde,
+                        title = "Tu Batería Social",
+                        description = "Muestra cuánta energía mental te queda. Se agota con el estrés y se recarga con un buen descanso."
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Indicadores de pasos
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(3) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(if (currentStep == index + 1) Color(0xFF5589B7) else Color.LightGray)
+                            )
+                        }
+                    }
+                    
+                    Button(
+                        onClick = {
+                            if (currentStep < 3) {
+                                currentStep++
+                            } else {
+                                onDismiss()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5589B7))
+                    ) {
+                        Text(if (currentStep < 3) "Siguiente" else "Comenzar")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TutorialStep(imageRes: Int, title: String, description: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(
+            painter = painterResource(id = imageRes),
+            contentDescription = null,
+            modifier = Modifier.size(120.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = title,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = description,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            color = Color.Gray
+        )
     }
 }

@@ -1,13 +1,14 @@
 package com.example.mindstack.views
 
-import android.app.DatePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -40,8 +42,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mindstack.ui.AuthViewModel
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var name by remember { mutableStateOf("") }
@@ -53,12 +60,12 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     var gender by remember { mutableStateOf("M") }
     var acceptedPolicies by remember { mutableStateOf(false) }
     var showModal by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
     
     var isPasswordFocused by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
-    val calendar = Calendar.getInstance()
+    val datePickerState = rememberDatePickerState()
 
     // Password requirements logic
     val hasMinLength = password.length >= 8
@@ -67,18 +74,6 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
     val hasDigit = password.any { it.isDigit() }
     val hasSpecialChar = password.any { !it.isLetterOrDigit() && "@#$%^&+=!$!%*?&#/._-".contains(it) }
     val isPasswordValid = hasMinLength && hasUppercase && hasLowercase && hasDigit && hasSpecialChar
-
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val mesFormateado = if (month + 1 < 10) "0${month + 1}" else "${month + 1}"
-            val diaFormateado = if (dayOfMonth < 10) "0$dayOfMonth" else "$dayOfMonth"
-            dob = "$year-$mesFormateado-$diaFormateado"
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
 
     // MODAL DE TÉRMINOS Y CONDICIONES
     if (showModal) {
@@ -110,6 +105,35 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
                 }
             }
         )
+    }
+
+    // NUEVO DATE PICKER MATERIAL 3 (CON MODO DE ENTRADA NUMÉRICA)
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
+                        dob = date.format(DateTimeFormatter.ISO_LOCAL_DATE) // YYYY-MM-DD
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("Seleccionar", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = true, // Permite cambiar entre calendario y escritura numérica
+                title = { Text("Fecha de nacimiento", modifier = Modifier.padding(16.dp)) }
+            )
+        }
     }
 
     Column(
@@ -208,9 +232,16 @@ fun RegisterView(navController: NavController, authViewModel: AuthViewModel) {
             onValueChange = { },
             label = { Text("Fecha de Nacimiento") },
             readOnly = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+            enabled = false, // Hacemos que toda la caja sea clickeable
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = Color.Black,
+                disabledBorderColor = Color.Gray,
+                disabledLabelColor = Color.Gray,
+                disabledTrailingIconColor = Color.Gray
+            ),
             trailingIcon = {
-                IconButton(onClick = { datePickerDialog.show() }) {
+                IconButton(onClick = { showDatePicker = true }) {
                     Icon(Icons.Default.DateRange, contentDescription = null)
                 }
             }
