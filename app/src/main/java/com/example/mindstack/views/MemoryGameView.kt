@@ -48,21 +48,21 @@ fun MemoryGameView(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Memorama", fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 20.dp))
+            Text("Memorama", fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Nivel: ${viewModel.currentLevel} / 3", fontSize = 18.sp, fontWeight = FontWeight.Medium)
-                Text("Movimientos: ${viewModel.moves}", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Nivel: ${viewModel.currentLevel} / 3", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text("Movimientos: ${viewModel.moves}", fontSize = 16.sp, fontWeight = FontWeight.Medium)
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             LazyVerticalGrid(
-                columns = GridCells.Fixed(if (viewModel.currentLevel == 1) 2 else 3),
+                columns = GridCells.Fixed(if (viewModel.currentLevel <= 2) 2 else 3),
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(viewModel.cards) { index, card ->
                     val isFlipped = viewModel.flippedCards.contains(index) || viewModel.matchedCards.contains(index)
@@ -73,7 +73,7 @@ fun MemoryGameView(
                             .clickable(enabled = !isFlipped && !viewModel.isProcessing && !viewModel.isGameFinished) { 
                                 viewModel.onCardClick(index, authViewModel, checkinId) 
                             },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(4.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
@@ -83,7 +83,7 @@ fun MemoryGameView(
                                     id = if (isFlipped) card.imageRes else R.drawable.carta_tapada
                                 ),
                                 contentDescription = null,
-                                modifier = Modifier.fillMaxSize().padding(12.dp)
+                                modifier = Modifier.fillMaxSize().padding(8.dp)
                             )
                         }
                     }
