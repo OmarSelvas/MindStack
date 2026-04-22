@@ -1,6 +1,5 @@
 package com.example.mindstack.data.entities
 
-import android.R
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
